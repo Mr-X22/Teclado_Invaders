@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teclado Invaders — Sin Prisas Tech</title>
+<style>
+  :root { --cyan:#00e5e5; --yellow:#ffc400; --blue:#00b9f4; --bg:#05070b; --panel:#101722; --muted:#91a0b5; --red:#ff4d4d; }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:#eef6ff; font-family:Consolas, "Courier New", monospace; }
+  .wrap { max-width:1180px; margin:0 auto; padding:18px; }
+  header { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:14px; }
+  .brand { display:flex; align-items:center; gap:12px; }
+  .brand-mark { color:var(--cyan); font-size:25px; text-shadow:0 0 14px #00e5e566; }
+  h1 { margin:0; font-size:clamp(18px,3vw,27px); letter-spacing:2px; }
+  .subtitle { color:var(--muted); font-size:12px; margin-top:5px; }
+  .stats { display:flex; gap:8px; flex-wrap:wrap; }
+  .stat { background:var(--panel); border:1px solid #253448; padding:9px 13px; min-width:86px; }
+  .stat small { display:block; color:var(--muted); font-size:10px; letter-spacing:1px; }
+  .stat strong { display:block; color:var(--yellow); font-size:18px; margin-top:3px; }
+  
+  /* Sección de Postura y Manos */
+  .posture-card { background:var(--panel); border:1px solid #253448; padding:16px; margin-bottom:16px; border-radius:4px; }
+  .posture-card h3 { color:var(--cyan); margin:0 0 10px; font-size:16px; letter-spacing:1px; }
+  .posture-content { display:flex; gap:20px; align-items:center; flex-wrap:wrap; }
+  .posture-img-container { flex:1; min-width:280px; text-align:center; }
+  .posture-img { max-width:100%; height:auto; border-radius:6px; border:1px solid #26394c; }
+  .posture-text { flex:1.5; min-width:280px; font-size:13px; line-height:1.6; color:#c1ccda; }
+  .posture-text b { color:var(--yellow); }
+
+  .game-shell { border:1px solid #26394c; background:#000; box-shadow:0 0 0 4px #0b111a, 0 12px 45px #0009; position:relative; }
+  canvas { display:block; width:100%; height:auto; aspect-ratio:16/9; image-rendering:pixelated; }
+  .overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:#000b; padding:20px; text-align:center; z-index:10; }
+  .overlay.hidden { display:none; }
+  .modal { max-width:480px; }
+  .modal h2 { color:var(--cyan); font-size:clamp(20px,4vw,32px); letter-spacing:2px; margin:0 0 12px; }
+  .modal p { color:#c1ccda; line-height:1.6; font-size:14px; margin-bottom:20px; }
+  .modal-buttons { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+  button, select { background:#101d2a; color:#effaff; border:1px solid var(--cyan); padding:11px 15px; font:inherit; cursor:pointer; }
+  button:hover { background:#123442; }
+  .btn-danger { border-color: var(--red); color: var(--red); }
+  .btn-danger:hover { background: #3a1111; }
+  .controls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:16px 0; }
+  .controls label { color:var(--muted); font-size:12px; }
+  .typing-row { background:var(--panel); border:1px solid #26394c; padding:13px 16px; margin-top:12px; }
+  .typing-label { font-size:10px; letter-spacing:2px; color:var(--muted); margin-bottom:8px; }
+  #currentText { min-height:26px; font-size:clamp(17px,2.7vw,24px); letter-spacing:2px; overflow-wrap:anywhere; }
+  #currentText .rest { color:#68768a; }
+  .help { color:var(--muted); font-size:12px; line-height:1.7; margin-top:12px; }
+  .help kbd { color:var(--yellow); border:1px solid #4c4524; padding:2px 5px; }
+  .message { color:var(--cyan); min-height:18px; font-size:12px; margin-top:7px; }
+  .finger-guide { display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:#0b121b; border:1px solid #26394c; padding:10px 13px; margin-top:10px; font-size:12px; }
+  .finger-guide strong { color:var(--yellow); }
+  .finger-dots { display:flex; gap:5px; }
+  .finger-dots span { width:14px; height:14px; border-radius:50%; display:inline-block; border:1px solid #ffffff55; }
+  .finger-dots span:nth-child(1){background:#e94358}.finger-dots span:nth-child(2){background:#f0a52c}.finger-dots span:nth-child(3){background:#62c47d}.finger-dots span:nth-child(4){background:#20b9ee}.finger-dots span:nth-child(5){background:#8795ff}
+  @media(max-width:600px) { .wrap{padding:10px}.stat{min-width:68px;padding:7px}.stat strong{font-size:15px} }
+</style>
+</head>
+<body>
+
+<!-- REPRODUCTORES DE AUDIO -->
+<audio id="musicEasy" src="One_Life_Left.mp3" loop preload="auto"></audio>
+<audio id="musicNormal" src="The_Last_Bastion.mp3" loop preload="auto"></audio>
+<audio id="musicHard" src="Planetary_Siege.mp3" loop preload="auto"></audio>
+<audio id="sfxBlaster" src="Blaster.mp3" preload="auto"></audio>
+<audio id="sfxExplosion" src="Explosion.mp3" preload="auto"></audio>
+
+<div class="wrap">
+  <header>
+    <div class="brand"><div class="brand-mark">▟▙</div><div><h1>TECLADO INVADERS</h1><div class="subtitle">SIN PRISAS TECH · MECANOGRAFÍA ESPACIAL</div></div></div>
+    <div class="stats">
+      <div class="stat"><small>PUNTOS</small><strong id="score">0000</strong></div>
+      <div class="stat"><small>PRECISIÓN</small><strong id="accuracy">100%</strong></div>
+      <div class="stat"><small>NIVEL</small><strong id="level">01</strong></div>
+      <div class="stat"><small>VIDAS</small><strong id="lives">♥ ♥ ♥</strong></div>
+    </div>
+  </header>
+
+  <!-- GUÍA DE POSICIÓN DE MANOS -->
+  <div class="posture-card">
+    <h3>🤲 POSTURA CORRECTA EN LAPTOP</h3>
+    <div class="posture-content">
+      <div class="posture-img-container">
+        <img src="https://blogger.googleusercontent.com/img/a/AVvXsEhBZmGhnnE8tKKh7emVbYH13OC-AdLgLkdEnwbOdX9xSjbjtAdafVePgYd-jL4EirHtiWtSc89TkBoBsIXk_iMoE_OyqsFZ08uAV1SVE1oY3L93kw69GIhwkhqycUnHmpMSb65w6mGW6VlwLkP9F2Zo3f5b8cNzI_nbJnp62xo8j87ihMiPCCOUj89-=w587-h358" alt="Posición de las manos en el teclado" class="posture-img">
+      </div>
+      <div class="posture-text">
+        <p><b>Fila Guía:</b> Coloca tus dedos índices sobre las letras <b>F</b> y <b>J</b> (reconócelas al tacto por sus pequeñas marcas o relieves).</p>
+        <p><b>Mano Izquierda:</b> Índice en <b>F</b>, medio en <b>D</b>, anular en <b>S</b> y meñique en <b>A</b>.</p>
+        <p><b>Mano Derecha:</b> Índice en <b>J</b>, medio en <b>K</b>, anular en <b>L</b> y meñique en <b>Ñ</b>.</p>
+        <p><b>Pulgares:</b> Descansan ligeramente sobre la barra espaciadora para alternar saltos de espacio sin mirar el teclado.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="game-shell">
+    <canvas id="game" width="960" height="540" aria-label="Juego de mecanografía espacial"></canvas>
+    <div class="overlay" id="overlay">
+      <div class="modal">
+        <h2 id="overlayTitle">¿LISTO PARA ESCRIBIR?</h2>
+        <p id="overlayText">Principiante: letras individuales alternadas. Normal: palabras cortas. Difícil: frases completas. ¡Selecciona la Velocidad Hacker y sobrevive a la lluvia de datos!</p>
+        <div class="modal-buttons">
+          <button id="startBtn">INICIAR MISIÓN ▶</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="typing-row">
+    <div class="typing-label">ESTADO DE MISIÓN</div>
+    <div id="currentText"><span class="rest">¡Prepara tus dedos en la fila guía ASDF y JKLÑ!</span></div>
+    <div class="message" id="message"></div>
+  </div>
+  <div class="controls">
+    <button id="pauseBtn">Ⅱ PAUSAR</button>
+    <button id="restartBtn">↻ REINICIAR</button>
+    <label for="difficulty">Dificultad</label>
+    <select id="difficulty">
+      <option value="easy">Principiante (One Life Left)</option>
+      <option value="normal" selected>Normal (The Last Bastion)</option>
+      <option value="hard">Rápido (Planetary Siege)</option>
+    </select>
+    <label for="gameSpeed">Velocidad</label>
+    <select id="gameSpeed">
+      <option value="slow">Lento</option>
+      <option value="normal" selected>Normal</option>
+      <option value="fast">Rápido</option>
+      <option value="hacker">Hacker (Lluvia)</option>
+    </select>
+  </div>
+  <div class="finger-guide"><strong>GUÍA DE DEDOS</strong><span class="finger-dots"><span></span><span></span><span></span><span></span><span></span></span><span>Meñique · Anular · Medio · Índice · Pulgar/espacio</span><span id="fingerTip">Coloca los dedos sobre ASDF y JKLÑ.</span></div>
+  <div class="help">
+    <kbd>A–Z</kbd> y <kbd>Ñ</kbd> para disparar · Escribe la letra o palabra del invasor activo · Pulsa <kbd>Esc</kbd> para pausar.
+  </div>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('game'), ctx = canvas.getContext('2d');
+  const $ = id => document.getElementById(id);
+  const overlay = $('overlay'), currentText = $('currentText');
+  
+  const musicEasy = $('musicEasy');
+  const musicNormal = $('musicNormal');
+  const musicHard = $('musicHard');
+  const sfxExplosion = $('sfxExplosion');
+
+  musicEasy.volume = 0.3;
+  musicNormal.volume = 0.3;
+  musicHard.volume = 0.3;
+  sfxExplosion.volume = 0.6;
+
+  function getCurrentMusic() {
+    const diff = $('difficulty').value;
+    if (diff === 'easy') return musicEasy;
+    if (diff === 'hard') return musicHard;
+    return musicNormal;
+  }
+
+  function stopAllMusic() {
+    musicEasy.pause(); musicEasy.currentTime = 0;
+    musicNormal.pause(); musicNormal.currentTime = 0;
+    musicHard.pause(); musicHard.currentTime = 0;
+  }
+
+  function playActiveMusic() {
+    stopAllMusic();
+    const activeMusic = getCurrentMusic();
+    activeMusic.play().catch(e => console.log("Audio play prevented:", e));
+  }
+
+  function playBlaster() {
+    try {
+      const clone = sfxBlaster.cloneNode();
+      clone.volume = 0.4;
+      clone.play().catch(e => {});
+      setTimeout(() => {
+        clone.pause();
+      }, 700);
+    } catch(e) {}
+  }
+
+  function playExplosion() {
+    sfxExplosion.currentTime = 0;
+    sfxExplosion.play().catch(e => {});
+  }
+
+  const words = [
+    'GALAXIA','TECLADO','VENTANA','PLANETA','COMPUTADORA','SATELITE','MEMORIA','PANTALLA','TECNICA','ESPACIO','VELOCIDAD','PIXEL','CODIGO','NAVE','TECLAS','APRENDER','ESCRIBIR','INTERNET','SISTEMA','PROGRAMA','ARCHIVO','CARPETA','MONITOR','TECLISTA','RAPIDEZ','PRACTICA','TECNOLOGIA','CASA','PERRO','MESA','AGUA','SOL','LUZ','FLOR','PAN','DADO','SALA'
+  ];
+  const phrases = [
+    'HOLA GALAXIA','APRENDE A ESCRIBIR','LA NAVE AVANZA','TECLAS EN ACCION','PILOTO DEL ESPACIO','ESCRIBE CON CALMA','SALVA EL PLANETA','PRACTICA CADA DIA','LA TECNOLOGIA AYUDA','VAMOS A APRENDER','DOMINA EL TECLADO','MISION COMPLETADA',
+    'MANTEN LOS DEDOS EN SU LUGAR','MIRA LA PANTALLA AL ESCRIBIR','USA LOS DOS PULGARES','PULsa CADA TECLA CON SU DEDO','LA PRACTICA MEJORA LA PRECISION',
+    'ESCRIBE SIN MIRAR EL TECLADO','EL DEDO REGRESA A SU POSICION','PRIMERO PRECISION DESPUES RAPIDEZ','USA LAS DOS MANOS CON CALMA'
+  ];
+
+  let shuffledPools = {words:[], phrases:[]};
+  function nextFromPool(key, source) {
+    if (!shuffledPools[key].length) {
+      shuffledPools[key] = source.slice();
+      for (let i=shuffledPools[key].length-1;i>0;i--) {
+        const j=Math.floor(Math.random()*(i+1));
+        [shuffledPools[key][i],shuffledPools[key][j]]=[shuffledPools[key][j],shuffledPools[key][i]];
+      }
+    }
+    return shuffledPools[key].pop();
+  }
+
+  const fingerFor = ch => {
+    if (ch===' ') return 'Pulgar';
+    const map = {
+      A:'Meñique izquierdo',Q:'Meñique izquierdo',Z:'Meñique izquierdo',
+      S:'Anular izquierdo',W:'Anular izquierdo',X:'Anular izquierdo',
+      D:'Medio izquierdo',E:'Medio izquierdo',C:'Medio izquierdo',
+      F:'Índice izquierdo',R:'Índice izquierdo',T:'Índice izquierdo',G:'Índice izquierdo',V:'Índice izquierdo',B:'Índice izquierdo',
+      J:'Índice derecho',Y:'Índice derecho',U:'Índice derecho',H:'Índice derecho',N:'Índice derecho',M:'Índice derecho',
+      K:'Medio derecho',I:'Medio derecho',L:'Anular derecho',O:'Anular derecho',Ñ:'Meñique derecho',P:'Meñique derecho'
+    };
+    return map[ch] || 'Dedo correspondiente';
+  };
+
+  const alienColors = ['#d68c70','#00dfdf','#83c777','#c57eb9','#b7bdc5','#78b9d0','#d5d65c'];
+  const pixelAlien = [
+    '...##...##...',
+    '..#########..',
+    '.###.###.###.',
+    '#############',
+    '##.#######.##',
+    '##.##...##.##',
+    '...########..',
+    '...##...##....'
+  ];
+
+  let state='menu', score=0, lives=3, typed=0, mistakes=0, level=1, rowText='', progress=0;
+  let aliens=[], bullets=[], particles=[], stars=[], lastTime=0, elapsed=0, spawnTimer=0, messageTimer=0;
+  let rowId=0, ship={x:480,y:486,shake:0, destroyed:false, explosionTimer:0};
+  let lastSpawnZone = 1;
+
+  // Multiplicadores con velocidad Hacker extrema
+  const getSpeedMultiplier = () => {
+    const s = $('gameSpeed').value;
+    if (s === 'slow') return 0.45;
+    if (s === 'fast') return 2.2;
+    if (s === 'hacker') return 4.2; // Lluvia veloz a los pocos segundos
+    return 1.0;
+  };
+
+  const baseSpeed = () => ({easy:12, normal:17, hard:25}[$('difficulty').value]) * getSpeedMultiplier();
+
+  for(let i=0;i<95;i++) stars.push({x:Math.random()*960,y:Math.random()*540,s:Math.random()*1.6+.3,a:Math.random()*.7+.2});
+  const rand = a => a[Math.floor(Math.random()*a.length)];
+
+  function setupWave() {
+    const diff = $('difficulty').value;
+    aliens = [];
+    
+    if (diff === 'hard') {
+      const phrase = nextFromPool('phrases', phrases);
+      rowText = phrase.toUpperCase(); progress = 0; rowId++;
+      const spacing = 900 / (rowText.length + 1);
+      for (let i = 0; i < rowText.length; i++) {
+        aliens.push({id: rowId+'-'+i, ch: rowText[i], x: 30 + spacing*(i+1), y: 70 + (i%2)*5, color: rand(alienColors), alive: true, phase: Math.random()*6.28, rowIndex: i});
+      }
+      renderText();
+      say('¡Modo Difícil! Escribe la frase completa.');
+    } else {
+      rowText = '';
+      progress = 0;
+      currentText.innerHTML = `<span class="rest">${diff === 'easy' ? '¡Dispara a las letras individuales que caen!' : '¡Dispara a las palabras escribiendo su primera letra!'}</span>`;
+      say(diff === 'easy' ? 'Modo Fácil: Letras cayendo de lados alternados.' : 'Modo Normal: Palabras cayendo.');
+    }
+  }
+
+  function startGame() {
+    score=0;lives=3;typed=0;mistakes=0;level=1;elapsed=0;bullets=[];particles=[];ship.shake=0;ship.destroyed=false;ship.explosionTimer=0;
+    spawnTimer = 0; lastSpawnZone = 1;
+    setupWave(); 
+    state='playing'; overlay.classList.add('hidden'); updateStats(); lastTime=performance.now();
+    $('pauseBtn').textContent='Ⅱ PAUSAR';
+    playActiveMusic();
+  }
+
+  function renderText() {
+    let html='';
+    for(let i=0;i<rowText.length;i++) {
+      const ch=rowText[i];
+      if(i<progress) html+=`<span class="done">${ch===' '?'&nbsp;':ch}</span>`;
+      else if(i===progress) html+=`<span class="next">${ch===' '?'␣':ch}</span>`;
+      else html+=`<span class="rest">${ch===' '?'&nbsp;':ch}</span>`;
+    }
+    currentText.innerHTML=html;
+    if(rowText && progress<rowText.length) $('fingerTip').textContent='Siguiente tecla: '+(rowText[progress]===' '?'ESPACIO':rowText[progress])+' · '+fingerFor(rowText[progress]);
+    else $('fingerTip').textContent='¡Línea completada!';
+  }
+
+  function say(t) { $('message').textContent=t; messageTimer=2.1; }
+
+  function updateStats() {
+    $('score').textContent=String(score).padStart(4,'0');
+    $('accuracy').textContent=(typed+mistakes?Math.round(typed/(typed+mistakes)*100):100)+'%';
+    $('level').textContent=String(level).padStart(2,'0');
+    $('lives').textContent='♥ '.repeat(lives).trim() || '—';
+  }
+
+  function shoot(target) {
+    if(!target) return;
+    playBlaster(); 
+    bullets.push({
+      x: ship.x, y: ship.y - 30,
+      tx: target.x, ty: target.y,
+      speed: 1200, target: target, color: target.color
+    });
+  }
+
+  function handleKey(e) {
+    if(e.key==='Escape') { e.preventDefault(); togglePause(); return; }
+    if(state!=='playing' || ship.destroyed) return;
+    let key=e.key.toUpperCase();
+    if(e.code==='Space') key=' ';
+    if(key.length!==1 || !/[A-ZÑ ]/.test(key)) return;
+    e.preventDefault();
+
+    const diff = $('difficulty').value;
+
+    if (diff === 'easy') {
+      let target = aliens.find(a => a.alive && a.ch === key);
+      if (target) {
+        typed++; score += 10 * level;
+        target.alive = false;
+        shoot(target);
+        burst(target.x, target.y, target.color);
+        updateStats();
+      } else {
+        mistakes++; ship.shake=4; updateStats();
+      }
+    } else if (diff === 'normal') {
+      let targetWord = aliens.find(a => a.alive && a.wordText[a.typedChars] === key);
+      
+      if (targetWord) {
+        typed++; score += 10 * level;
+        targetWord.typedChars++;
+        shoot(targetWord);
+        
+        if (targetWord.typedChars < targetWord.wordText.length) {
+          targetWord.ch = targetWord.wordText[targetWord.typedChars];
+        } else {
+          targetWord.alive = false;
+          burst(targetWord.x, targetWord.y, targetWord.color);
+        }
+        updateStats();
+      } else {
+        mistakes++; ship.shake=4; updateStats();
+      }
+    } else {
+      if(key===rowText[progress]) {
+        typed++; score+=10*level;
+        const target=aliens.find(a=>a.alive && a.rowIndex===progress);
+        if(target) { 
+          target.alive = false; 
+          shoot(target); 
+          burst(target.x, target.y, target.color);
+        }
+        progress++;
+        if(progress>=rowText.length) {
+          score+=50*level; level=Math.min(99,1+Math.floor(score/250));
+          say('¡FRASE COMPLETADA! Siguiente oleada…');
+          updateStats(); renderText();
+          setTimeout(()=>{ if(state==='playing' && progress>=rowText.length) setupWave(); },350);
+        } else {
+          if(progress >= Math.max(1,rowText.length-3)) aliens.forEach(a=>{if(a.alive)a.y+=18;});
+          renderText(); updateStats();
+        }
+      } else {
+        mistakes++; ship.shake=7; updateStats();
+      }
+    }
+  }
+
+  function burst(x,y,color) {
+    for(let i=0;i<14;i++) {
+      particles.push({
+        x: x, y: y,
+        vx: (Math.random() - 0.5) * 220,
+        vy: (Math.random() - 0.5) * 220,
+        life: 0.5, maxLife: 0.5, color: color
+      });
+    }
+  }
+
+  function shipExplosion(x, y) {
+    playExplosion(); 
+    ship.destroyed = true;
+    ship.explosionTimer = 1.2;
+    stopAllMusic();
+
+    for(let i=0; i<45; i++) {
+      particles.push({
+        x: x + (Math.random()-0.5)*40,
+        y: y + (Math.random()-0.5)*20,
+        vx: (Math.random() - 0.5) * 300,
+        vy: (Math.random() - 0.5) * 300,
+        life: 1.0, maxLife: 1.0,
+        color: rand(['#ff4d4d', '#ffc400', '#ff8800', '#ffffff', '#00e5e5'])
+      });
+    }
+  }
+
+  function togglePause() {
+    if(state==='playing' && !ship.destroyed) { 
+      state='paused'; overlay.classList.remove('hidden'); 
+      $('overlayTitle').textContent='MISIÓN EN PAUSA'; 
+      $('overlayText').textContent='Tómate un respiro. Cuando estés listo, continúa.'; 
+      let btnContainer = document.querySelector('.modal-buttons');
+      btnContainer.innerHTML = `<button id="startBtn">CONTINUAR ▶</button>`;
+      $('startBtn').onclick = togglePause;
+      getCurrentMusic().pause();
+    }
+    else if(state==='paused') { 
+      state='playing'; overlay.classList.add('hidden'); lastTime=performance.now(); 
+      getCurrentMusic().play();
+    }
+  }
+
+  function drawAlien(a) {
+    const scale=3.1, w=pixelAlien[0].length*scale, h=pixelAlien.length*scale;
+    ctx.fillStyle=a.color;
+    for(let r=0;r<pixelAlien.length;r++) for(let c=0;c<pixelAlien[r].length;c++) if(pixelAlien[r][c]==='#') ctx.fillRect(Math.round(a.x-w/2+c*scale),Math.round(a.y-h/2+r*scale+Math.sin(elapsed*2+a.phase)*2),scale,scale);
+    ctx.fillStyle='#000';
+    ctx.fillRect(a.x-11,a.y-4,4,4);ctx.fillRect(a.x+7,a.y-4,4,4);
+    ctx.fillStyle='#ffc400';ctx.font='bold 17px Consolas, monospace';ctx.textAlign='center';
+    
+    if (a.wordText) {
+      let typedPart = a.wordText.substring(0, a.typedChars);
+      let restPart = a.wordText.substring(a.typedChars);
+      ctx.fillStyle = '#00e5e5';
+      ctx.textAlign = 'left';
+      ctx.fillText(typedPart, a.x - (a.wordText.length * 5), a.y + 35);
+      ctx.fillStyle = '#ffc400';
+      ctx.fillText(restPart, a.x - (a.wordText.length * 5) + (typedPart.length * 10), a.y + 35);
+    } else {
+      ctx.fillText(a.ch, a.x, a.y + 35);
+    }
+  }
+
+  function drawShip() {
+    if (ship.destroyed && ship.explosionTimer > 0) return;
+    const x=ship.x+(ship.shake?Math.random()*4-2:0), y=ship.y;
+    ctx.fillStyle='#00b9f4';
+    ctx.fillRect(x-4,y-45,8,20);ctx.fillRect(x-9,y-25,18,24);
+    ctx.fillRect(x-20,y-13,40,13);ctx.fillRect(x-34,y-4,68,9);
+    ctx.fillStyle='#00e5e5';ctx.fillRect(x-5,y-22,10,20);
+    ctx.fillStyle='#ffc400';ctx.fillRect(x-17,y-9,4,4);ctx.fillRect(x+13,y-9,4,4);
+    ctx.fillStyle='#e84d9b';ctx.fillRect(x-15,y+7,4,6);ctx.fillRect(x+11,y+7,4,6);
+  }
+
+  function draw() {
+    ctx.fillStyle='#000';ctx.fillRect(0,0,960,540);
+    for(const s of stars){ctx.globalAlpha=s.a;ctx.fillStyle='#b8d9ed';ctx.fillRect(s.x,s.y,s.s,s.s);}
+    ctx.globalAlpha=1;
+    ctx.strokeStyle='#07121c';ctx.lineWidth=1;
+    for(let y=20;y<540;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(960,y);ctx.stroke();}
+    ctx.fillStyle='#183044';ctx.fillRect(28,28,904,1);
+    ctx.fillStyle='#607b91';ctx.font='11px Consolas';ctx.textAlign='left';ctx.fillText('SECTOR '+String(level).padStart(2,'0'),30,20);
+    
+    aliens.forEach(a=>{if(a.alive)drawAlien(a);});
+
+    bullets.forEach(b=>{
+      ctx.strokeStyle = '#00ffff';
+      ctx.lineWidth = 4;
+      ctx.shadowColor = '#00e5e5';
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.moveTo(b.x, b.y);
+      let trailX = b.x - (b.dx || 0) * 0.15;
+      let trailY = b.y - (b.dy || 0) * 0.15;
+      ctx.lineTo(trailX, trailY);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    });
+
+    particles.forEach(p=>{
+      ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(p.x, p.y, p.life > 0.5 ? 6 : 3, p.life > 0.5 ? 6 : 3);
+    });
+    ctx.globalAlpha = 1;
+
+    drawShip();
+    ctx.fillStyle='#102638';ctx.fillRect(25,512,910,1);
+    ctx.fillStyle='#00b9f4';ctx.fillRect(25,512,Math.max(0,910*(progress/Math.max(1,rowText.length))),2);
+  }
+
+  function update(dt) {
+    elapsed+=dt; 
+    if(messageTimer>0){messageTimer-=dt;if(messageTimer<=0)$('message').textContent='';}
+    
+    if (ship.destroyed) {
+      ship.explosionTimer -= dt;
+      particles.forEach(p=>{ p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; });
+      particles = particles.filter(p => p.life > 0);
+
+      if (ship.explosionTimer <= 0 && state === 'gameover') {
+        overlay.classList.remove('hidden');
+        $('overlayTitle').textContent = '¡NAVE DESTRUIDA!';
+        $('overlayText').textContent = `Un invasor impactó tu base. Puntuación final: ${score}. ¿Qué deseas hacer?`;
+        let btnContainer = document.querySelector('.modal-buttons');
+        btnContainer.innerHTML = `
+          <button id="retryBtn" class="btn-danger">VOLVER A INTENTAR</button>
+          <button id="menuBtn">MENÚ PRINCIPAL</button>
+        `;
+        $('retryBtn').onclick = () => { overlay.classList.add('hidden'); startGame(); };
+        $('menuBtn').onclick = () => { location.reload(); };
+      }
+      return;
+    }
+
+    const diff = $('difficulty').value;
+    const speedFactor = getSpeedMultiplier();
+
+    // Generador automático con alternancia de zonas (izquierda, centro, derecha) en nivel fácil
+    if (diff === 'easy') {
+      spawnTimer += dt;
+      let interval = $('gameSpeed').value === 'hacker' ? 0.6 : (2.2 / speedFactor);
+      if (spawnTimer >= interval) {
+        spawnTimer = 0;
+        
+        let nextZone = (lastSpawnZone + 1 + Math.floor(Math.random() * 2)) % 3;
+        lastSpawnZone = nextZone;
+        
+        let posX = 120;
+        if (nextZone === 1) posX = 480;
+        if (nextZone === 2) posX = 840;
+        posX += (Math.random() - 0.5) * 80;
+
+        const randomChar = rand('ASDFJKLÑEIRUCMVNP');
+        aliens.push({
+          id: Math.random(), ch: randomChar,
+          x: posX, y: 50,
+          color: rand(alienColors), alive: true, phase: Math.random()*6.28
+        });
+      }
+    } else if (diff === 'normal') {
+      spawnTimer += dt;
+      let interval = $('gameSpeed').value === 'hacker' ? 0.9 : (3.5 / speedFactor);
+      if (spawnTimer >= interval) {
+        spawnTimer = 0;
+        const selectedWord = rand(words);
+        aliens.push({
+          id: Math.random(), ch: selectedWord[0], wordText: selectedWord, typedChars: 0,
+          x: Math.random() * 700 + 100, y: 50,
+          color: rand(alienColors), alive: true, phase: Math.random()*6.28
+        });
+      }
+    }
+
+    const alive=aliens.filter(a=>a.alive);
+    const speed=baseSpeed()+level*1.2;
+    alive.forEach(a=>{a.y+=speed*dt; a.x+=Math.sin(elapsed*1.4+a.phase)*5*dt;});
+    
+    for (let i = bullets.length - 1; i >= 0; i--) {
+      let b = bullets[i];
+      let destX = b.target.x;
+      let destY = b.target.y;
+      
+      let dx = destX - b.x;
+      let dy = destY - b.y;
+      let dist = Math.hypot(dx, dy);
+      b.dx = dx; b.dy = dy;
+
+      let step = b.speed * dt;
+      if (dist <= step) {
+        bullets.splice(i, 1);
+      } else {
+        b.x += (dx / dist) * step;
+        b.y += (dy / dist) * step;
+      }
+    }
+
+    particles.forEach(p=>{ p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; });
+    particles = particles.filter(p => p.life > 0);
+
+    if(ship.shake>0)ship.shake--;
+
+    if(alive.some(a=>a.y > ship.y - 45)) {
+      state='gameover';
+      shipExplosion(ship.x, ship.y);
+    }
+  }
+
+  function loop(now) {
+    const dt=Math.min(.04,(now-lastTime)/1000||0);lastTime=now;
+    if(state==='playing'||ship.destroyed)update(dt);
+    draw(); requestAnimationFrame(loop);
+  }
+
+  $('startBtn').onclick = () => { startGame(); };
+  $('pauseBtn').addEventListener('click', togglePause);
+  $('restartBtn').addEventListener('click', startGame);
+  window.addEventListener('keydown', handleKey);
+  
+  $('difficulty').addEventListener('change',() => {
+    say('Dificultad actualizada.');
+    if(state==='playing') {
+      setupWave();
+      playActiveMusic();
+    }
+  });
+
+  $('gameSpeed').addEventListener('change', () => {
+    say('Velocidad de descenso actualizada.');
+  });
+  
+  rowText='HOLA AS'; progress=0; aliens=[];
+  const init='HOLA'; init.split('').forEach((ch,i)=>aliens.push({id:'intro'+i,ch,x:350+i*85,y:125,color:alienColors[i],alive:true,phase:i,rowIndex:i}));
+  renderText(); lastTime=performance.now(); requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
