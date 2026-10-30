@@ -37,6 +37,8 @@
   .typing-row { background:var(--panel); border:1px solid #26394c; padding:10px 14px; margin-top:8px; border-radius:6px; }
   .typing-label { font-size:10px; letter-spacing:2px; color:var(--muted); margin-bottom:6px; }
   #currentText { min-height:24px; font-size:clamp(16px,2.5vw,22px); letter-spacing:2px; overflow-wrap:anywhere; }
+  #currentText .done { color:var(--cyan); text-shadow:0 0 9px #00e5e566; }
+  #currentText .next { color:var(--yellow); text-decoration:underline; text-underline-offset:4px; }
   #currentText .rest { color:#68768a; }
   .help { color:var(--muted); font-size:11px; line-height:1.5; margin-top:8px; }
   .help kbd { color:var(--yellow); border:1px solid #4c4524; padding:2px 4px; border-radius:3px; }
@@ -55,6 +57,7 @@
 <audio id="musicEasy" src="One_Life_Left.mp3" loop preload="auto"></audio>
 <audio id="musicNormal" src="The_Last_Bastion.mp3" loop preload="auto"></audio>
 <audio id="musicHard" src="Planetary_Siege.mp3" loop preload="auto"></audio>
+<audio id="musicBoss" src="Last_Stand_at_Sector_Seven.mp3" loop preload="auto"></audio>
 <audio id="sfxBlaster" src="Blaster.mp3" preload="auto"></audio>
 <audio id="sfxExplosion" src="Explosion.mp3" preload="auto"></audio>
 
@@ -69,7 +72,7 @@
     </div>
     <div class="stats">
       <div class="stat"><small>PUNTOS</small><strong id="score">0000</strong></div>
-      <div class="stat"><small>PRECISIÓN</small><strong id="accuracy">100%</strong></div>
+      <div class="stat"><small>TIEMPO</small><strong id="timer">03:00</strong></div>
       <div class="stat"><small>NIVEL</small><strong id="level">01</strong></div>
       <div class="stat"><small>VIDAS</small><strong id="lives">♥ ♥ ♥</strong></div>
     </div>
@@ -79,8 +82,8 @@
     <canvas id="game" width="960" height="540" aria-label="Juego de mecanografía espacial"></canvas>
     <div class="overlay" id="overlay">
       <div class="modal">
-        <h2 id="overlayTitle">¿LISTO PARA ESCRIBIR?</h2>
-        <p id="overlayText">Estilo Contra: Tienes 3 vidas. Cada impacto provoca una explosión en tu nave. ¡Sobrevive y destruye a los invasores!</p>
+        <h2 id="overlayTitle">¿LISTO PARA LA MISIÓN?</h2>
+        <p id="overlayText">Tienes 3 minutos para sobrevivir y acumular puntos. ¡A los 3 minutos aparecerá el Jefe Final!</p>
         <div class="modal-buttons">
           <button id="startBtn">INICIAR MISIÓN ▶</button>
         </div>
@@ -99,9 +102,9 @@
     <button id="restartBtn">↻ REINICIAR</button>
     <label for="difficulty">Dificultad</label>
     <select id="difficulty">
-      <option value="easy">Principiante (One Life Left)</option>
-      <option value="normal" selected>Normal (The Last Bastion)</option>
-      <option value="hard">Rápido (Planetary Siege)</option>
+      <option value="easy">Principiante</option>
+      <option value="normal" selected>Normal</option>
+      <option value="hard">Rápido</option>
     </select>
     <label for="gameSpeed">Velocidad</label>
     <select id="gameSpeed">
@@ -120,7 +123,7 @@
   </div>
 
   <div class="help">
-    <kbd>A–Z</kbd> y <kbd>Ñ</kbd> para disparar · Tienes 3 vidas estilo Contra · Pulsa <kbd>Esc</kbd> para pausar.
+    <kbd>A–Z</kbd> y <kbd>Ñ</kbd> para disparar · Tienes 3 vidas estilo Contra · Sobrevive 3 min para enfrentar al Boss.
   </div>
 </div>
 
@@ -133,14 +136,17 @@
   const musicEasy = $('musicEasy');
   const musicNormal = $('musicNormal');
   const musicHard = $('musicHard');
+  const musicBoss = $('musicBoss');
   const sfxExplosion = $('sfxExplosion');
 
   musicEasy.volume = 0.3;
   musicNormal.volume = 0.3;
   musicHard.volume = 0.3;
+  musicBoss.volume = 0.4;
   sfxExplosion.volume = 0.6;
 
   function getCurrentMusic() {
+    if (isBossActive) return musicBoss;
     const diff = $('difficulty').value;
     if (diff === 'easy') return musicEasy;
     if (diff === 'hard') return musicHard;
@@ -151,6 +157,7 @@
     musicEasy.pause(); musicEasy.currentTime = 0;
     musicNormal.pause(); musicNormal.currentTime = 0;
     musicHard.pause(); musicHard.currentTime = 0;
+    musicBoss.pause(); musicBoss.currentTime = 0;
   }
 
   function playActiveMusic() {
@@ -178,51 +185,24 @@
   ];
   const phrases = [
     'HOLA GALAXIA','APRENDE A ESCRIBIR','LA NAVE AVANZA','TECLAS EN ACCION','PILOTO DEL ESPACIO','ESCRIBE CON CALMA','SALVA EL PLANETA','PRACTICA CADA DIA','LA TECNOLOGIA AYUDA','VAMOS A APRENDER','DOMINA EL TECLADO','MISION COMPLETADA',
-    'MANTEN LOS DEDOS EN SU LUGAR','MIRA LA PANTALLA AL ESCRIBIR','USA LOS DOS PULGARES','PULSA CADA TECLA CON SU DEDO','LA PRACTICA MEJORA LA PRECISION',
-    'ESCRIBE SIN MIRAR EL TECLADO','EL DEDO REGRESA A SU POSICION','PRIMERO PRECISION DESPUES RAPIDEZ','USA LAS DOS MANOS CON CALMA'
+    'MANTEN LOS DEDOS EN SU LUGAR','MIRA LA PANTALLA AL ESCRIBIR','USA LOS DOS PULGARES','PULSA CADA TECLA CON SU DEDO','LA PRACTICA MEJORA LA PRECISION'
   ];
 
-  let shuffledPools = {words:[], phrases:[]};
-  function nextFromPool(key, source) {
-    if (!shuffledPools[key].length) {
-      shuffledPools[key] = source.slice();
-      for (let i=shuffledPools[key].length-1;i>0;i--) {
-        const j=Math.floor(Math.random()*(i+1));
-        [shuffledPools[key][i],shuffledPools[key][j]]=[shuffledPools[key][j],shuffledPools[key][i]];
-      }
-    }
-    return shuffledPools[key].pop();
-  }
-
-  const fingerFor = ch => {
-    if (ch===' ') return 'Pulgar';
-    const map = {
-      A:'Meñique izquierdo',Q:'Meñique izquierdo',Z:'Meñique izquierdo',
-      S:'Anular izquierdo',W:'Anular izquierdo',X:'Anular izquierdo',
-      D:'Medio izquierdo',E:'Medio izquierdo',C:'Medio izquierdo',
-      F:'Índice izquierdo',R:'Índice izquierdo',T:'Índice izquierdo',G:'Índice izquierdo',V:'Índice izquierdo',B:'Índice izquierdo',
-      J:'Índice derecho',Y:'Índice derecho',U:'Índice derecho',H:'Índice derecho',N:'Índice derecho',M:'Índice derecho',
-      K:'Medio derecho',I:'Medio derecho',L:'Anular derecho',O:'Anular derecho',Ñ:'Meñique derecho',P:'Meñique derecho'
-    };
-    return map[ch] || 'Dedo correspondiente';
-  };
-
-  const alienColors = ['#d68c70','#00dfdf','#83c777','#c57eb9','#b7bdc5','#78b9d0','#d5d65c'];
-  const pixelAlien = [
-    '...##...##...',
-    '..#########..',
-    '.###.###.###.',
-    '#############',
-    '##.#######.##',
-    '##.##...##.##',
-    '...########..',
-    '...##...##....'
-  ];
+  const bossPhrase = "SUPERCOMPUTADORA QWERTY BLOQUEO MAYOR";
 
   let state='menu', score=0, lives=3, typed=0, mistakes=0, level=1, rowText='', progress=0;
   let aliens=[], bullets=[], particles=[], stars=[], lastTime=0, elapsed=0, spawnTimer=0, messageTimer=0;
   let rowId=0, ship={x:480,y:486,shake:0, invulnerable:0};
   let lastSpawnZone = 1;
+
+  // Variables del temporizador y del Boss
+  let gameTime = 180; // 3 minutos en segundos
+  let timerInterval = null;
+  let isBossActive = false;
+  let bossHealth = 100;
+  let bossPointsAccumulated = 0; // Necesita 70 puntos para poder atacar
+  let bossRecharging = false;
+  let bossRechargeTimer = 0;
 
   const getSpeedMultiplier = () => {
     const s = $('gameSpeed').value;
@@ -238,34 +218,61 @@
   const rand = a => a[Math.floor(Math.random()*a.length)];
 
   function setupWave() {
+    if (isBossActive) return;
     const diff = $('difficulty').value;
     aliens = [];
     
     if (diff === 'hard') {
-      const phrase = nextFromPool('phrases', phrases);
+      const phrase = phrases[Math.floor(Math.random()*phrases.length)];
       rowText = phrase.toUpperCase(); progress = 0; rowId++;
       const spacing = 900 / (rowText.length + 1);
       for (let i = 0; i < rowText.length; i++) {
         aliens.push({id: rowId+'-'+i, ch: rowText[i], x: 30 + spacing*(i+1), y: 70 + (i%2)*5, color: rand(alienColors), alive: true, phase: Math.random()*6.28, rowIndex: i});
       }
       renderText();
-      say('¡Modo Difícil! Escribe la frase completa.');
+      say('¡Modo Rápido! Escribe la frase completa.');
     } else {
       rowText = '';
       progress = 0;
       currentText.innerHTML = `<span class="rest">${diff === 'easy' ? '¡Dispara a las letras individuales que caen!' : '¡Dispara a las palabras escribiendo su primera letra!'}</span>`;
-      say(diff === 'easy' ? 'Modo Fácil: Letras cayendo de lados alternados.' : 'Modo Normal: Palabras cayendo.');
+      say(diff === 'easy' ? 'Principiante: Letras cayendo.' : 'Normal: Palabras cayendo.');
     }
+  }
+
+  function startBossFight() {
+    isBossActive = true;
+    aliens = []; // Limpiar invasores normales
+    bossHealth = 100;
+    bossPointsAccumulated = 0;
+    rowText = bossPhrase;
+    progress = 0;
+    renderText();
+    playActiveMusic();
+    say('¡ALERTA! EL JEFE FINAL HA APARECIDO. ¡Acumula 70 puntos sin errores para atacar!');
   }
 
   function startGame() {
     score=0; lives=3; typed=0; mistakes=0; level=1; elapsed=0; bullets=[]; particles=[]; ship.shake=0; ship.invulnerable=0;
-    spawnTimer = 0; lastSpawnZone = 1;
+    spawnTimer = 0; lastSpawnZone = 1; gameTime = 180; isBossActive = false; bossPointsAccumulated = 0;
     updateStats();
     setupWave(); 
     state='playing'; overlay.classList.add('hidden'); lastTime=performance.now();
     $('pauseBtn').textContent='Ⅱ PAUSAR';
     playActiveMusic();
+
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      if (state === 'playing' && !isBossActive) {
+        gameTime--;
+        let mins = String(Math.floor(gameTime / 60)).padStart(2, '0');
+        let secs = String(gameTime % 60).padStart(2, '0');
+        $('timer').textContent = `${mins}:${secs}`;
+        if (gameTime <= 0) {
+          clearInterval(timerInterval);
+          startBossFight();
+        }
+      }
+    }, 1000);
   }
 
   function renderText() {
@@ -277,8 +284,12 @@
       else html+=`<span class="rest">${ch===' '?'&nbsp;':ch}</span>`;
     }
     currentText.innerHTML=html;
-    if(rowText && progress<rowText.length) $('fingerTip').textContent='Siguiente tecla: '+(rowText[progress]===' '?'ESPACIO':rowText[progress])+' · '+fingerFor(rowText[progress]);
-    else $('fingerTip').textContent='¡Línea completada!';
+    if (isBossActive) {
+      $('fingerTip').textContent = `Puntos para atacar: ${bossPointsAccumulated} / 70 · Siguiente: ${rowText[progress]===' '?'ESPACIO':rowText[progress]}`;
+    } else {
+      if(rowText && progress<rowText.length) $('fingerTip').textContent='Siguiente tecla: '+(rowText[progress]===' '?'ESPACIO':rowText[progress])+' · '+fingerFor(rowText[progress]);
+      else $('fingerTip').textContent='¡Línea completada!';
+    }
   }
 
   function say(t) { $('message').textContent=t; messageTimer=2.1; }
@@ -308,8 +319,57 @@
     if(key.length!==1 || !/[A-ZÑ ]/.test(key)) return;
     e.preventDefault();
 
-    const diff = $('difficulty').value;
+    if (isBossActive) {
+      if (bossRecharging) return; // Si está recargando energía por un error, no responde temporalmente
 
+      if (key === rowText[progress]) {
+        typed++; 
+        bossPointsAccumulated += 10; // Cada letra correcta suma 10 puntos para alcanzar los 70 necesarios
+        score += 15;
+        progress++;
+        shoot({x: 480, y: 120, color: '#00e5e5'});
+        updateStats();
+
+        if (bossPointsAccumulated >= 70) {
+          // ¡Ataque exitoso al Boss! Se le descuenta vida
+          bossHealth -= 25;
+          bossPointsAccumulated = 0; // Reinicia acumulación para el siguiente ataque
+          say('¡IMPACTO CRÍTICO AL BOSS! Vida del Boss: ' + Math.max(0, bossHealth) + '%');
+          playExplosion();
+
+          if (bossHealth <= 0) {
+            state = 'gameover';
+            stopAllMusic();
+            overlay.classList.remove('hidden');
+            $('overlayTitle').textContent = '¡VICTORIA ÉPICA!';
+            $('overlayText').textContent = `¡Has derrotado al Jefe Final! Puntuación final: ${score}. ¡Misión cumplida!`;
+            let btnContainer = document.querySelector('.modal-buttons');
+            btnContainer.innerHTML = `<button id="retryBtn">JUGAR DE NUEVO ▶</button><button id="menuBtn">SALIR</button>`;
+            $('retryBtn').onclick = () => { overlay.classList.add('hidden'); startGame(); };
+            $('menuBtn').onclick = () => { location.reload(); };
+            return;
+          }
+        }
+
+        if (progress >= rowText.length) {
+          progress = 0; // Reinicia la frase del boss si la completa
+        }
+        renderText();
+      } else {
+        // ERROR CONTRA EL BOSS: Reinicia los 70 puntos y activa animación de recarga de energía
+        mistakes++;
+        bossPointsAccumulated = 0;
+        bossRecharging = true;
+        bossRechargeTimer = 1.0; // 1 segundo de animación de recarga del jefe
+        playExplosion();
+        say('¡ERROR! El Boss absorbió tu energía y recarga escudo. ¡Vuelve a juntar 70 puntos!');
+        updateStats();
+        renderText();
+      }
+      return;
+    }
+
+    const diff = $('difficulty').value;
     if (diff === 'easy') {
       let target = aliens.find(a => a.alive && a.ch === key);
       if (target) {
@@ -323,12 +383,10 @@
       }
     } else if (diff === 'normal') {
       let targetWord = aliens.find(a => a.alive && a.wordText[a.typedChars] === key);
-      
       if (targetWord) {
         typed++; score += 10 * level;
         targetWord.typedChars++;
         shoot(targetWord);
-        
         if (targetWord.typedChars < targetWord.wordText.length) {
           targetWord.ch = targetWord.wordText[targetWord.typedChars];
         } else {
@@ -378,7 +436,7 @@
   function triggerHitEffect() {
     playExplosion();
     ship.shake = 18;
-    ship.invulnerable = 1.5; // 1.5 segundos de inmunidad estilo Contra
+    ship.invulnerable = 1.5;
     for(let i=0; i<35; i++) {
       particles.push({
         x: ship.x + (Math.random()-0.5)*40,
@@ -428,10 +486,39 @@
     }
   }
 
-  function drawShip() {
-    // Parpadeo de invulnerabilidad estilo Contra
-    if (ship.invulnerable > 0 && Math.floor(elapsed * 20) % 2 === 0) return;
+  function drawBoss() {
+    // Dibujar el Jefe Final imponente en la parte superior
+    ctx.fillStyle = bossRecharging ? '#ff4d4d' : '#8795ff';
+    ctx.fillRect(380, 80, 200, 70);
+    ctx.fillStyle = '#00e5e5';
+    ctx.fillRect(400, 100, 40, 30);
+    ctx.fillRect(520, 100, 40, 30);
 
+    // Animación visual de recarga de energía cuando el jugador se equivoca
+    if (bossRecharging) {
+      ctx.strokeStyle = '#ffc400';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(480, 115, 60 + Math.sin(elapsed*20)*10, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // Barra de vida del Boss
+    ctx.fillStyle = '#253448';
+    ctx.fillRect(280, 40, 400, 16);
+    ctx.fillStyle = '#ff4d4d';
+    ctx.fillRect(280, 40, 4 * bossHealth, 16);
+    ctx.strokeStyle = '#fff';
+    ctx.strokeRect(280, 40, 400, 16);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 12px Consolas';
+    ctx.textAlign = 'center';
+    ctx.fillText('JEFE FINAL: QWERTY (' + bossHealth + '%)', 480, 53);
+  }
+
+  function drawShip() {
+    if (ship.invulnerable > 0 && Math.floor(elapsed * 20) % 2 === 0) return;
     const x=ship.x+(ship.shake?Math.random()*6-3:0), y=ship.y;
     ctx.fillStyle='#00b9f4';
     ctx.fillRect(x-4,y-45,8,20);ctx.fillRect(x-9,y-25,18,24);
@@ -447,10 +534,14 @@
     ctx.globalAlpha=1;
     ctx.strokeStyle='#07121c';ctx.lineWidth=1;
     for(let y=20;y<540;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(960,y);ctx.stroke();}
-    ctx.fillStyle='#183044';ctx.fillRect(28,28,904,1);
-    ctx.fillStyle='#607b91';ctx.font='11px Consolas';ctx.textAlign='left';ctx.fillText('SECTOR '+String(level).padStart(2,'0'),30,20);
     
-    aliens.forEach(a=>{if(a.alive)drawAlien(a);});
+    if (isBossActive) {
+      drawBoss();
+    } else {
+      ctx.fillStyle='#183044';ctx.fillRect(28,28,904,1);
+      ctx.fillStyle='#607b91';ctx.font='11px Consolas';ctx.textAlign='left';ctx.fillText('SECTOR '+String(level).padStart(2,'0'),30,20);
+      aliens.forEach(a=>{if(a.alive)drawAlien(a);});
+    }
 
     bullets.forEach(b=>{
       ctx.strokeStyle = '#00ffff';
@@ -482,46 +573,87 @@
     elapsed+=dt; 
     if(messageTimer>0){messageTimer-=dt;if(messageTimer<=0)$('message').textContent='';}
     if(ship.invulnerable>0) ship.invulnerable-=dt;
-
-    const diff = $('difficulty').value;
-    const speedFactor = getSpeedMultiplier();
-
-    if (diff === 'easy') {
-      spawnTimer += dt;
-      let interval = $('gameSpeed').value === 'hacker' ? 0.6 : (2.2 / speedFactor);
-      if (spawnTimer >= interval) {
-        spawnTimer = 0;
-        let nextZone = (lastSpawnZone + 1 + Math.floor(Math.random() * 2)) % 3;
-        lastSpawnZone = nextZone;
-        let posX = 120;
-        if (nextZone === 1) posX = 480;
-        if (nextZone === 2) posX = 840;
-        posX += (Math.random() - 0.5) * 80;
-
-        const randomChar = rand('ASDFJKLÑEIRUCMVNP');
-        aliens.push({
-          id: Math.random(), ch: randomChar,
-          x: posX, y: 50,
-          color: rand(alienColors), alive: true, phase: Math.random()*6.28
-        });
-      }
-    } else if (diff === 'normal') {
-      spawnTimer += dt;
-      let interval = $('gameSpeed').value === 'hacker' ? 0.9 : (3.5 / speedFactor);
-      if (spawnTimer >= interval) {
-        spawnTimer = 0;
-        const selectedWord = rand(words);
-        aliens.push({
-          id: Math.random(), ch: selectedWord[0], wordText: selectedWord, typedChars: 0,
-          x: Math.random() * 700 + 100, y: 50,
-          color: rand(alienColors), alive: true, phase: Math.random()*6.28
-        });
-      }
+    if(bossRecharging) {
+      bossRechargeTimer -= dt;
+      if (bossRechargeTimer <= 0) bossRecharging = false;
     }
 
-    const alive=aliens.filter(a=>a.alive);
-    const speed=baseSpeed()+level*1.2;
-    alive.forEach(a=>{a.y+=speed*dt; a.x+=Math.sin(elapsed*1.4+a.phase)*5*dt;});
+    if (isBossActive) {
+      // Ataques más rápidos del jefe en la fase final
+      if (Math.random() < 0.03) {
+        // Disparos láser rápidos del boss hacia la nave
+        bullets.push({
+          x: 480 + (Math.random() - 0.5) * 150,
+          y: 150,
+          tx: ship.x, ty: ship.y,
+          speed: 800, target: {x: ship.x, y: ship.y}, color: '#ff4d4d'
+        });
+      }
+    } else {
+      const diff = $('difficulty').value;
+      const speedFactor = getSpeedMultiplier();
+
+      if (diff === 'easy') {
+        spawnTimer += dt;
+        let interval = $('gameSpeed').value === 'hacker' ? 0.6 : (2.2 / speedFactor);
+        if (spawnTimer >= interval) {
+          spawnTimer = 0;
+          let nextZone = (lastSpawnZone + 1 + Math.floor(Math.random() * 2)) % 3;
+          lastSpawnZone = nextZone;
+          let posX = 120;
+          if (nextZone === 1) posX = 480;
+          if (nextZone === 2) posX = 840;
+          posX += (Math.random() - 0.5) * 80;
+
+          const randomChar = rand('ASDFJKLÑEIRUCMVNP');
+          aliens.push({
+            id: Math.random(), ch: randomChar,
+            x: posX, y: 50,
+            color: rand(alienColors), alive: true, phase: Math.random()*6.28
+          });
+        }
+      } else if (diff === 'normal') {
+        spawnTimer += dt;
+        let interval = $('gameSpeed').value === 'hacker' ? 0.9 : (3.5 / speedFactor);
+        if (spawnTimer >= interval) {
+          spawnTimer = 0;
+          const selectedWord = words[Math.floor(Math.random()*words.length)];
+          aliens.push({
+            id: Math.random(), ch: selectedWord[0], wordText: selectedWord, typedChars: 0,
+            x: Math.random() * 700 + 100, y: 50,
+            color: rand(alienColors), alive: true, phase: Math.random()*6.28
+          });
+        }
+      }
+
+      const alive=aliens.filter(a=>a.alive);
+      const speed=baseSpeed()+level*1.2;
+      alive.forEach(a=>{a.y+=speed*dt; a.x+=Math.sin(elapsed*1.4+a.phase)*5*dt;});
+
+      if (ship.invulnerable <= 0) {
+        let hitAlien = alive.find(a => a.y > ship.y - 45);
+        if (hitAlien) {
+          lives--;
+          updateStats();
+          triggerHitEffect();
+          hitAlien.alive = false;
+
+          if (lives > 0) {
+            say('¡IMPACTO! Te quedan ' + lives + ' vidas.');
+          } else {
+            state = 'gameover';
+            stopAllMusic();
+            overlay.classList.remove('hidden');
+            $('overlayTitle').textContent = '¡GAME OVER!';
+            $('overlayText').textContent = `Te quedaste sin vidas. Puntuación final: ${score}. ¿Qué deseas hacer?`;
+            let btnContainer = document.querySelector('.modal-buttons');
+            btnContainer.innerHTML = `<button id="retryBtn" class="btn-danger">VOLVER A INTENTAR</button><button id="menuBtn">MENÚ PRINCIPAL</button>`;
+            $('retryBtn').onclick = () => { overlay.classList.add('hidden'); startGame(); };
+            $('menuBtn').onclick = () => { location.reload(); };
+          }
+        }
+      }
+    }
     
     for (let i = bullets.length - 1; i >= 0; i--) {
       let b = bullets[i];
@@ -546,35 +678,6 @@
     particles = particles.filter(p => p.life > 0);
 
     if(ship.shake>0) ship.shake--;
-
-    // Colisión de invasores contra la base solo si no está invulnerable
-    if (ship.invulnerable <= 0) {
-      let hitAlien = alive.find(a => a.y > ship.y - 45);
-      if (hitAlien) {
-        lives--;
-        updateStats();
-        triggerHitEffect();
-        // Destruir el invasor que impactó para limpiar el camino momentáneamente
-        hitAlien.alive = false;
-
-        if (lives > 0) {
-          say('¡IMPACTO! Te quedan ' + lives + ' vidas.');
-        } else {
-          state = 'gameover';
-          stopAllMusic();
-          overlay.classList.remove('hidden');
-          $('overlayTitle').textContent = '¡GAME OVER!';
-          $('overlayText').textContent = `Te quedaste sin vidas estilo Contra. Puntuación final: ${score}. ¿Qué deseas hacer?`;
-          let btnContainer = document.querySelector('.modal-buttons');
-          btnContainer.innerHTML = `
-            <button id="retryBtn" class="btn-danger">VOLVER A INTENTAR</button>
-            <button id="menuBtn">MENÚ PRINCIPAL</button>
-          `;
-          $('retryBtn').onclick = () => { overlay.classList.add('hidden'); startGame(); };
-          $('menuBtn').onclick = () => { location.reload(); };
-        }
-      }
-    }
   }
 
   function loop(now) {
@@ -590,7 +693,7 @@
   
   $('difficulty').addEventListener('change',() => {
     say('Dificultad actualizada.');
-    if(state==='playing') {
+    if(state==='playing' && !isBossActive) {
       setupWave();
       playActiveMusic();
     }
