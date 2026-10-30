@@ -7,28 +7,20 @@
 <style>
   :root { --cyan:#00e5e5; --yellow:#ffc400; --blue:#00b9f4; --bg:#05070b; --panel:#101722; --muted:#91a0b5; --red:#ff4d4d; }
   * { box-sizing:border-box }
-  body { margin:0; background:var(--bg); color:#eef6ff; font-family:Consolas, "Courier New", monospace; }
-  .wrap { max-width:1180px; margin:0 auto; padding:18px; }
-  header { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:14px; }
-  .brand { display:flex; align-items:center; gap:12px; }
-  .brand-mark { color:var(--cyan); font-size:25px; text-shadow:0 0 14px #00e5e566; }
-  h1 { margin:0; font-size:clamp(18px,3vw,27px); letter-spacing:2px; }
-  .subtitle { color:var(--muted); font-size:12px; margin-top:5px; }
-  .stats { display:flex; gap:8px; flex-wrap:wrap; }
-  .stat { background:var(--panel); border:1px solid #253448; padding:9px 13px; min-width:86px; }
-  .stat small { display:block; color:var(--muted); font-size:10px; letter-spacing:1px; }
-  .stat strong { display:block; color:var(--yellow); font-size:18px; margin-top:3px; }
+  body { margin:0; background:var(--bg); color:#eef6ff; font-family:Consolas, "Courier New", monospace; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; min-height:100vh; padding:10px; }
+  .wrap { width:100%; max-width:980px; margin:0 auto; padding:10px; }
   
-  /* Sección de Postura y Manos */
-  .posture-card { background:var(--panel); border:1px solid #253448; padding:16px; margin-bottom:16px; border-radius:4px; }
-  .posture-card h3 { color:var(--cyan); margin:0 0 10px; font-size:16px; letter-spacing:1px; }
-  .posture-content { display:flex; gap:20px; align-items:center; flex-wrap:wrap; }
-  .posture-img-container { flex:1; min-width:280px; text-align:center; }
-  .posture-img { max-width:100%; height:auto; border-radius:6px; border:1px solid #26394c; }
-  .posture-text { flex:1.5; min-width:280px; font-size:13px; line-height:1.6; color:#c1ccda; }
-  .posture-text b { color:var(--yellow); }
-
-  .game-shell { border:1px solid #26394c; background:#000; box-shadow:0 0 0 4px #0b111a, 0 12px 45px #0009; position:relative; }
+  header { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:10px; background:var(--panel); border:1px solid #253448; padding:10px 14px; border-radius:6px; }
+  .brand { display:flex; align-items:center; gap:10px; }
+  .brand-mark { color:var(--cyan); font-size:22px; text-shadow:0 0 14px #00e5e566; }
+  h1 { margin:0; font-size:clamp(16px,2.5vw,22px); letter-spacing:2px; }
+  .subtitle { color:var(--muted); font-size:10px; margin-top:2px; }
+  .stats { display:flex; gap:6px; flex-wrap:wrap; }
+  .stat { background:#0b121b; border:1px solid #253448; padding:6px 10px; min-width:76px; text-align:center; border-radius:4px; }
+  .stat small { display:block; color:var(--muted); font-size:9px; letter-spacing:1px; }
+  .stat strong { display:block; color:var(--yellow); font-size:15px; margin-top:2px; }
+  
+  .game-shell { border:1px solid #26394c; background:#000; box-shadow:0 0 0 4px #0b111a, 0 12px 45px #0009; position:relative; border-radius:6px; overflow:hidden; }
   canvas { display:block; width:100%; height:auto; aspect-ratio:16/9; image-rendering:pixelated; }
   .overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:#000b; padding:20px; text-align:center; z-index:10; }
   .overlay.hidden { display:none; }
@@ -36,25 +28,25 @@
   .modal h2 { color:var(--cyan); font-size:clamp(20px,4vw,32px); letter-spacing:2px; margin:0 0 12px; }
   .modal p { color:#c1ccda; line-height:1.6; font-size:14px; margin-bottom:20px; }
   .modal-buttons { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
-  button, select { background:#101d2a; color:#effaff; border:1px solid var(--cyan); padding:11px 15px; font:inherit; cursor:pointer; }
+  button, select { background:#101d2a; color:#effaff; border:1px solid var(--cyan); padding:9px 13px; font:inherit; cursor:pointer; border-radius:4px; }
   button:hover { background:#123442; }
   .btn-danger { border-color: var(--red); color: var(--red); }
   .btn-danger:hover { background: #3a1111; }
-  .controls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:16px 0; }
+  .controls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:10px 0; }
   .controls label { color:var(--muted); font-size:12px; }
-  .typing-row { background:var(--panel); border:1px solid #26394c; padding:13px 16px; margin-top:12px; }
-  .typing-label { font-size:10px; letter-spacing:2px; color:var(--muted); margin-bottom:8px; }
-  #currentText { min-height:26px; font-size:clamp(17px,2.7vw,24px); letter-spacing:2px; overflow-wrap:anywhere; }
+  .typing-row { background:var(--panel); border:1px solid #26394c; padding:10px 14px; margin-top:8px; border-radius:6px; }
+  .typing-label { font-size:10px; letter-spacing:2px; color:var(--muted); margin-bottom:6px; }
+  #currentText { min-height:24px; font-size:clamp(16px,2.5vw,22px); letter-spacing:2px; overflow-wrap:anywhere; }
   #currentText .rest { color:#68768a; }
-  .help { color:var(--muted); font-size:12px; line-height:1.7; margin-top:12px; }
-  .help kbd { color:var(--yellow); border:1px solid #4c4524; padding:2px 5px; }
-  .message { color:var(--cyan); min-height:18px; font-size:12px; margin-top:7px; }
-  .finger-guide { display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:#0b121b; border:1px solid #26394c; padding:10px 13px; margin-top:10px; font-size:12px; }
+  .help { color:var(--muted); font-size:11px; line-height:1.5; margin-top:8px; }
+  .help kbd { color:var(--yellow); border:1px solid #4c4524; padding:2px 4px; border-radius:3px; }
+  .message { color:var(--cyan); min-height:16px; font-size:11px; margin-top:5px; }
+  .finger-guide { display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:#0b121b; border:1px solid #26394c; padding:8px 12px; margin-top:8px; font-size:11px; border-radius:6px; }
   .finger-guide strong { color:var(--yellow); }
-  .finger-dots { display:flex; gap:5px; }
-  .finger-dots span { width:14px; height:14px; border-radius:50%; display:inline-block; border:1px solid #ffffff55; }
+  .finger-dots { display:flex; gap:4px; }
+  .finger-dots span { width:12px; height:12px; border-radius:50%; display:inline-block; border:1px solid #ffffff55; }
   .finger-dots span:nth-child(1){background:#e94358}.finger-dots span:nth-child(2){background:#f0a52c}.finger-dots span:nth-child(3){background:#62c47d}.finger-dots span:nth-child(4){background:#20b9ee}.finger-dots span:nth-child(5){background:#8795ff}
-  @media(max-width:600px) { .wrap{padding:10px}.stat{min-width:68px;padding:7px}.stat strong{font-size:15px} }
+  @media(max-width:600px) { .wrap{padding:5px}.stat{min-width:60px;padding:5px}.stat strong{font-size:13px} }
 </style>
 </head>
 <body>
@@ -68,7 +60,13 @@
 
 <div class="wrap">
   <header>
-    <div class="brand"><div class="brand-mark">▟▙</div><div><h1>TECLADO INVADERS</h1><div class="subtitle">SIN PRISAS TECH · MECANOGRAFÍA ESPACIAL</div></div></div>
+    <div class="brand">
+      <div class="brand-mark">▟▙</div>
+      <div>
+        <h1>TECLADO INVADERS</h1>
+        <div class="subtitle">SIN PRISAS TECH</div>
+      </div>
+    </div>
     <div class="stats">
       <div class="stat"><small>PUNTOS</small><strong id="score">0000</strong></div>
       <div class="stat"><small>PRECISIÓN</small><strong id="accuracy">100%</strong></div>
@@ -77,39 +75,25 @@
     </div>
   </header>
 
-  <!-- GUÍA DE POSICIÓN DE MANOS -->
-  <div class="posture-card">
-    <h3>🤲 POSTURA CORRECTA EN LAPTOP</h3>
-    <div class="posture-content">
-      <div class="posture-img-container">
-        <img src="https://blogger.googleusercontent.com/img/a/AVvXsEhBZmGhnnE8tKKh7emVbYH13OC-AdLgLkdEnwbOdX9xSjbjtAdafVePgYd-jL4EirHtiWtSc89TkBoBsIXk_iMoE_OyqsFZ08uAV1SVE1oY3L93kw69GIhwkhqycUnHmpMSb65w6mGW6VlwLkP9F2Zo3f5b8cNzI_nbJnp62xo8j87ihMiPCCOUj89-=w587-h358" alt="Posición de las manos en el teclado" class="posture-img">
-      </div>
-      <div class="posture-text">
-        <p><b>Fila Guía:</b> Coloca tus dedos índices sobre las letras <b>F</b> y <b>J</b> (reconócelas al tacto por sus pequeñas marcas o relieves).</p>
-        <p><b>Mano Izquierda:</b> Índice en <b>F</b>, medio en <b>D</b>, anular en <b>S</b> y meñique en <b>A</b>.</p>
-        <p><b>Mano Derecha:</b> Índice en <b>J</b>, medio en <b>K</b>, anular en <b>L</b> y meñique en <b>Ñ</b>.</p>
-        <p><b>Pulgares:</b> Descansan ligeramente sobre la barra espaciadora para alternar saltos de espacio sin mirar el teclado.</p>
-      </div>
-    </div>
-  </div>
-
   <div class="game-shell">
     <canvas id="game" width="960" height="540" aria-label="Juego de mecanografía espacial"></canvas>
     <div class="overlay" id="overlay">
       <div class="modal">
         <h2 id="overlayTitle">¿LISTO PARA ESCRIBIR?</h2>
-        <p id="overlayText">¡Tienes 3 vidas! Destruye a los invasores antes de que colisionen con tu base. Ajusta la velocidad y pon a prueba tu destreza.</p>
+        <p id="overlayText">Estilo Contra: Tienes 3 vidas. Cada impacto provoca una explosión en tu nave. ¡Sobrevive y destruye a los invasores!</p>
         <div class="modal-buttons">
           <button id="startBtn">INICIAR MISIÓN ▶</button>
         </div>
       </div>
     </div>
   </div>
+
   <div class="typing-row">
     <div class="typing-label">ESTADO DE MISIÓN</div>
     <div id="currentText"><span class="rest">¡Prepara tus dedos en la fila guía ASDF y JKLÑ!</span></div>
     <div class="message" id="message"></div>
   </div>
+
   <div class="controls">
     <button id="pauseBtn">Ⅱ PAUSAR</button>
     <button id="restartBtn">↻ REINICIAR</button>
@@ -127,9 +111,16 @@
       <option value="hacker">Hacker (Lluvia)</option>
     </select>
   </div>
-  <div class="finger-guide"><strong>GUÍA DE DEDOS</strong><span class="finger-dots"><span></span><span></span><span></span><span></span><span></span></span><span>Meñique · Anular · Medio · Índice · Pulgar/espacio</span><span id="fingerTip">Coloca los dedos sobre ASDF y JKLÑ.</span></div>
+
+  <div class="finger-guide">
+    <strong>GUÍA DE DEDOS</strong>
+    <span class="finger-dots"><span></span><span></span><span></span><span></span><span></span></span>
+    <span>Meñique · Anular · Medio · Índice · Pulgar/espacio</span>
+    <span id="fingerTip">Coloca los dedos sobre ASDF y JKLÑ.</span>
+  </div>
+
   <div class="help">
-    <kbd>A–Z</kbd> y <kbd>Ñ</kbd> para disparar · Tienes 3 vidas · Pulsa <kbd>Esc</kbd> para pausar.
+    <kbd>A–Z</kbd> y <kbd>Ñ</kbd> para disparar · Tienes 3 vidas estilo Contra · Pulsa <kbd>Esc</kbd> para pausar.
   </div>
 </div>
 
@@ -230,7 +221,7 @@
 
   let state='menu', score=0, lives=3, typed=0, mistakes=0, level=1, rowText='', progress=0;
   let aliens=[], bullets=[], particles=[], stars=[], lastTime=0, elapsed=0, spawnTimer=0, messageTimer=0;
-  let rowId=0, ship={x:480,y:486,shake:0};
+  let rowId=0, ship={x:480,y:486,shake:0, invulnerable:0};
   let lastSpawnZone = 1;
 
   const getSpeedMultiplier = () => {
@@ -268,7 +259,7 @@
   }
 
   function startGame() {
-    score=0; lives=3; typed=0; mistakes=0; level=1; elapsed=0; bullets=[]; particles=[]; ship.shake=0;
+    score=0; lives=3; typed=0; mistakes=0; level=1; elapsed=0; bullets=[]; particles=[]; ship.shake=0; ship.invulnerable=0;
     spawnTimer = 0; lastSpawnZone = 1;
     updateStats();
     setupWave(); 
@@ -386,15 +377,16 @@
 
   function triggerHitEffect() {
     playExplosion();
-    ship.shake = 12; // Sacudida fuerte de la nave al perder una vida
-    for(let i=0; i<25; i++) {
+    ship.shake = 18;
+    ship.invulnerable = 1.5; // 1.5 segundos de inmunidad estilo Contra
+    for(let i=0; i<35; i++) {
       particles.push({
-        x: ship.x + (Math.random()-0.5)*30,
-        y: ship.y + (Math.random()-0.5)*15,
-        vx: (Math.random() - 0.5) * 250,
-        vy: (Math.random() - 0.5) * 250,
-        life: 0.6, maxLife: 0.6,
-        color: rand(['#ff4d4d', '#ffc400', '#ffffff'])
+        x: ship.x + (Math.random()-0.5)*40,
+        y: ship.y + (Math.random()-0.5)*20,
+        vx: (Math.random() - 0.5) * 300,
+        vy: (Math.random() - 0.5) * 300,
+        life: 0.8, maxLife: 0.8,
+        color: rand(['#ff4d4d', '#ffc400', '#ffffff', '#ff8800'])
       });
     }
   }
@@ -437,6 +429,9 @@
   }
 
   function drawShip() {
+    // Parpadeo de invulnerabilidad estilo Contra
+    if (ship.invulnerable > 0 && Math.floor(elapsed * 20) % 2 === 0) return;
+
     const x=ship.x+(ship.shake?Math.random()*6-3:0), y=ship.y;
     ctx.fillStyle='#00b9f4';
     ctx.fillRect(x-4,y-45,8,20);ctx.fillRect(x-9,y-25,18,24);
@@ -486,6 +481,7 @@
   function update(dt) {
     elapsed+=dt; 
     if(messageTimer>0){messageTimer-=dt;if(messageTimer<=0)$('message').textContent='';}
+    if(ship.invulnerable>0) ship.invulnerable-=dt;
 
     const diff = $('difficulty').value;
     const speedFactor = getSpeedMultiplier();
@@ -549,33 +545,34 @@
     particles.forEach(p=>{ p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; });
     particles = particles.filter(p => p.life > 0);
 
-    if(ship.shake>0)ship.shake--;
+    if(ship.shake>0) ship.shake--;
 
-    // Revisar si algún invasor tocó la base
-    let hitAlien = alive.find(a => a.y > ship.y - 45);
-    if (hitAlien) {
-      lives--;
-      updateStats();
-      triggerHitEffect();
+    // Colisión de invasores contra la base solo si no está invulnerable
+    if (ship.invulnerable <= 0) {
+      let hitAlien = alive.find(a => a.y > ship.y - 45);
+      if (hitAlien) {
+        lives--;
+        updateStats();
+        triggerHitEffect();
+        // Destruir el invasor que impactó para limpiar el camino momentáneamente
+        hitAlien.alive = false;
 
-      if (lives > 0) {
-        // Si aún tiene vidas, limpiamos los invasores actuales y reiniciamos la oleada actual para continuar
-        setupWave();
-        say('¡Impacto recibido! Te quedan ' + lives + ' vidas.');
-      } else {
-        // Se acabaron las 3 vidas: Game Over definitivo
-        state = 'gameover';
-        stopAllMusic();
-        overlay.classList.remove('hidden');
-        $('overlayTitle').textContent = '¡GAME OVER!';
-        $('overlayText').textContent = `Te quedaste sin vidas. Puntuación final: ${score}. ¿Qué deseas hacer?`;
-        let btnContainer = document.querySelector('.modal-buttons');
-        btnContainer.innerHTML = `
-          <button id="retryBtn" class="btn-danger">VOLVER A INTENTAR</button>
-          <button id="menuBtn">MENÚ PRINCIPAL</button>
-        `;
-        $('retryBtn').onclick = () => { overlay.classList.add('hidden'); startGame(); };
-        $('menuBtn').onclick = () => { location.reload(); };
+        if (lives > 0) {
+          say('¡IMPACTO! Te quedan ' + lives + ' vidas.');
+        } else {
+          state = 'gameover';
+          stopAllMusic();
+          overlay.classList.remove('hidden');
+          $('overlayTitle').textContent = '¡GAME OVER!';
+          $('overlayText').textContent = `Te quedaste sin vidas estilo Contra. Puntuación final: ${score}. ¿Qué deseas hacer?`;
+          let btnContainer = document.querySelector('.modal-buttons');
+          btnContainer.innerHTML = `
+            <button id="retryBtn" class="btn-danger">VOLVER A INTENTAR</button>
+            <button id="menuBtn">MENÚ PRINCIPAL</button>
+          `;
+          $('retryBtn').onclick = () => { overlay.classList.add('hidden'); startGame(); };
+          $('menuBtn').onclick = () => { location.reload(); };
+        }
       }
     }
   }
