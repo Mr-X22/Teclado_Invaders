@@ -20,7 +20,6 @@
   .stat small { display:block; color:var(--muted); font-size:9px; letter-spacing:1px; }
   .stat strong { display:block; color:var(--yellow); font-size:15px; margin-top:2px; }
 
-  /* Sección de Postura y Manos Visible */
   .posture-card { background:var(--panel); border:1px solid #253448; padding:14px; margin-bottom:10px; border-radius:6px; }
   .posture-card h3 { color:var(--cyan); margin:0 0 8px; font-size:14px; letter-spacing:1px; }
   .posture-content { display:flex; gap:15px; align-items:center; flex-wrap:wrap; }
@@ -31,16 +30,20 @@
 
   .game-shell { border:1px solid #26394c; background:#000; box-shadow:0 0 0 4px #0b111a, 0 12px 45px #0009; position:relative; border-radius:6px; overflow:hidden; }
   canvas { display:block; width:100%; height:auto; aspect-ratio:16/9; image-rendering:pixelated; }
-  .overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:#000b; padding:20px; text-align:center; z-index:10; }
-  .overlay.hidden { display:none; }
-  .modal { max-width:480px; }
+  
+  .overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:#000b; padding:20px; text-align:center; z-index:100; transition: opacity 0.2s ease; }
+  .overlay.hidden { display:none; pointer-events:none; }
+  
+  .modal { max-width:480px; position:relative; z-index:101; }
   .modal h2 { color:var(--cyan); font-size:clamp(20px,4vw,32px); letter-spacing:2px; margin:0 0 12px; }
   .modal p { color:#c1ccda; line-height:1.6; font-size:14px; margin-bottom:20px; }
   .modal-buttons { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
-  button, select { background:#101d2a; color:#effaff; border:1px solid var(--cyan); padding:9px 13px; font:inherit; cursor:pointer; border-radius:4px; z-index:20; position:relative; }
+  
+  button, select { background:#101d2a; color:#effaff; border:1px solid var(--cyan); padding:9px 13px; font:inherit; cursor:pointer; border-radius:4px; z-index:102; position:relative; }
   button:hover { background:#123442; }
   .btn-danger { border-color: var(--red); color: var(--red); }
   .btn-danger:hover { background: #3a1111; }
+  
   .controls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:10px 0; }
   .controls label { color:var(--muted); font-size:12px; }
   .typing-row { background:var(--panel); border:1px solid #26394c; padding:10px 14px; margin-top:8px; border-radius:6px; }
@@ -84,10 +87,10 @@
       <div class="stat"><small>TIEMPO</small><strong id="timer">03:00</strong></div>
       <div class="stat"><small>NIVEL</small><strong id="level">01</strong></div>
       <div class="stat"><small>VIDAS</small><strong id="lives">♥ ♥ ♥</strong></div>
+      <div class="stat"><small>PRECISIÓN</small><strong id="accuracy">100%</strong></div>
     </div>
   </header>
 
-  <!-- GUÍA DE POSICIÓN DE MANOS RECUPERADA -->
   <div class="posture-card">
     <h3>🤲 POSTURA CORRECTA EN LAPTOP</h3>
     <div class="posture-content">
@@ -95,7 +98,7 @@
         <img src="https://blogger.googleusercontent.com/img/a/AVvXsEhBZmGhnnE8tKKh7emVbYH13OC-AdLgLkdEnwbOdX9xSjbjtAdafVePgYd-jL4EirHtiWtSc89TkBoBsIXk_iMoE_OyqsFZ08uAV1SVE1oY3L93kw69GIhwkhqycUnHmpMSb65w6mGW6VlwLkP9F2Zo3f5b8cNzI_nbJnp62xo8j87ihMiPCCOUj89-=w587-h358" alt="Posición de las manos en el teclado" class="posture-img">
       </div>
       <div class="posture-text">
-        <p><b>Fila Guía:</b> Coloca tus dedos índices sobre las letras <b>F</b> y <b>J</b> (reconócelas al tacto por sus pequeñas marcas).</p>
+        <p><b>Fila Guía:</b> Coloca tus dedos índices sobre las letras <b>F</b> y <b>J</b>.</p>
         <p><b>Mano Izquierda:</b> Índice en <b>F</b>, medio en <b>D</b>, anular en <b>S</b> y meñique en <b>A</b>.</p>
         <p><b>Mano Derecha:</b> Índice en <b>J</b>, medio en <b>K</b>, anular en <b>L</b> y meñique en <b>Ñ</b>.</p>
       </div>
@@ -109,7 +112,7 @@
         <h2 id="overlayTitle">¿LISTO PARA LA MISIÓN?</h2>
         <p id="overlayText">Tienes 3 minutos para sobrevivir y acumular puntos. ¡A los 3 minutos aparecerá el Jefe Final!</p>
         <div class="modal-buttons" id="modalButtonsContainer">
-          <button id="startBtn">INICIAR MISIÓN ▶</button>
+          <button id="startBtn" type="button">INICIAR MISIÓN ▶</button>
         </div>
       </div>
     </div>
@@ -122,8 +125,8 @@
   </div>
 
   <div class="controls">
-    <button id="pauseBtn">Ⅱ PAUSAR</button>
-    <button id="restartBtn">↻ REINICIAR</button>
+    <button id="pauseBtn" type="button">Ⅱ PAUSAR</button>
+    <button id="restartBtn" type="button">↻ REINICIAR</button>
     <label for="difficulty">Dificultad</label>
     <select id="difficulty">
       <option value="easy">Principiante</option>
@@ -161,7 +164,39 @@
   const musicNormal = $('musicNormal');
   const musicHard = $('musicHard');
   const musicBoss = $('musicBoss');
+  const sfxBlaster = $('sfxBlaster');
   const sfxExplosion = $('sfxExplosion');
+
+  // Recursos visuales faltantes en la versión original.
+  const alienColors = ['#62c47d', '#20b9ee', '#f0a52c', '#e94358', '#8795ff'];
+  const pixelAlien = [
+    '....##.....##....',
+    '.....##...##.....',
+    '....#########....',
+    '...##.#####.##...',
+    '..#############..',
+    '..##.##...##.##..',
+    '..##.##...##.##..',
+    '.....##...##.....',
+    '....##.....##....'
+  ];
+
+  function fingerFor(ch) {
+    const c = String(ch || '').toUpperCase();
+    const fingers = {
+      A:'meñique izquierdo', Q:'meñique izquierdo', Z:'meñique izquierdo',
+      S:'anular izquierdo', W:'anular izquierdo', X:'anular izquierdo',
+      D:'medio izquierdo', E:'medio izquierdo', C:'medio izquierdo',
+      F:'índice izquierdo', R:'índice izquierdo', T:'índice izquierdo',
+      G:'índice izquierdo', V:'índice izquierdo', B:'índice izquierdo',
+      J:'índice derecho', Y:'índice derecho', U:'índice derecho',
+      H:'índice derecho', N:'índice derecho', M:'índice derecho',
+      K:'medio derecho', I:'medio derecho',
+      L:'anular derecho', O:'anular derecho',
+      Ñ:'meñique derecho', P:'meñique derecho'
+    };
+    return c === ' ' ? 'pulgar' : (fingers[c] || 'dedo correspondiente');
+  }
 
   musicEasy.volume = 0.3;
   musicNormal.volume = 0.3;
@@ -187,21 +222,26 @@
   function playActiveMusic() {
     stopAllMusic();
     const activeMusic = getCurrentMusic();
-    activeMusic.play().catch(e => console.log("Audio play prevented:", e));
+    const playback = activeMusic.play();
+    if (playback && typeof playback.catch === 'function') {
+      playback.catch(e => console.log("Audio play prevented or file unavailable:", e));
+    }
   }
 
   function playBlaster() {
     try {
       const clone = sfxBlaster.cloneNode();
       clone.volume = 0.4;
-      clone.play().catch(e => {});
+      const playback = clone.play();
+      if (playback && typeof playback.catch === 'function') playback.catch(() => {});
       setTimeout(() => { clone.pause(); }, 700);
     } catch(e) {}
   }
 
   function playExplosion() {
     sfxExplosion.currentTime = 0;
-    sfxExplosion.play().catch(e => {});
+    const playback = sfxExplosion.play();
+    if (playback && typeof playback.catch === 'function') playback.catch(() => {});
   }
 
   const words = [
@@ -214,7 +254,7 @@
 
   const bossPhrase = "SUPERCOMPUTADORA QWERTY BLOQUEO MAYOR";
 
-  let state='menu', score=0, lives=3, typed=0, mistakes=0, level=1, rowText='', progress=0;
+  let state='ready', score=0, lives=3, typed=0, mistakes=0, level=1, rowText='', progress=0;
   let aliens=[], bullets=[], particles=[], stars=[], lastTime=0, elapsed=0, spawnTimer=0, messageTimer=0;
   let rowId=0, ship={x:480,y:486,shake:0, invulnerable:0};
   let lastSpawnZone = 1;
@@ -264,6 +304,8 @@
 
   function startBossFight() {
     isBossActive = true;
+    bossRecharging = false;
+    bossRechargeTimer = 0;
     aliens = [];
     bossHealth = 100;
     bossPointsAccumulated = 0;
@@ -276,10 +318,14 @@
 
   function startGame() {
     score=0; lives=3; typed=0; mistakes=0; level=1; elapsed=0; bullets=[]; particles=[]; ship.shake=0; ship.invulnerable=0;
+    bossHealth=100; bossRecharging=false; bossRechargeTimer=0;
     spawnTimer = 0; lastSpawnZone = 1; gameTime = 180; isBossActive = false; bossPointsAccumulated = 0;
+    $('timer').textContent = '03:00';
     updateStats();
     setupWave(); 
-    state='playing'; overlay.classList.add('hidden'); lastTime=performance.now();
+    state='playing'; 
+    overlay.classList.add('hidden'); 
+    lastTime=performance.now();
     $('pauseBtn').textContent='Ⅱ PAUSAR';
     playActiveMusic();
 
@@ -361,13 +407,12 @@
 
           if (bossHealth <= 0) {
             state = 'gameover';
+            if (timerInterval) clearInterval(timerInterval);
             stopAllMusic();
             overlay.classList.remove('hidden');
             $('overlayTitle').textContent = '¡VICTORIA ÉPICA!';
             $('overlayText').textContent = `¡Has derrotado al Jefe Final! Puntuación final: ${score}. ¡Misión cumplida!`;
-            $('modalButtonsContainer').innerHTML = `<button id="retryBtn">JUGAR DE NUEVO ▶</button><button id="menuBtn">SALIR</button>`;
-            $('retryBtn').onclick = () => { overlay.classList.add('hidden'); startGame(); };
-            $('menuBtn').onclick = () => { location.reload(); };
+            $('modalButtonsContainer').innerHTML = `<button id="retryBtn" type="button">JUGAR DE NUEVO ▶</button><button id="menuBtn" type="button">SALIR</button>`;
             return;
           }
         }
@@ -471,16 +516,18 @@
 
   function togglePause() {
     if(state==='playing') { 
-      state='paused'; overlay.classList.remove('hidden'); 
+      state='paused'; 
+      overlay.classList.remove('hidden'); 
       $('overlayTitle').textContent='MISIÓN EN PAUSA'; 
       $('overlayText').textContent='Tómate un respiro. Cuando estés listo, continúa.'; 
-      $('modalButtonsContainer').innerHTML = `<button id="startBtn">CONTINUAR ▶</button>`;
-      $('startBtn').onclick = togglePause;
+      $('modalButtonsContainer').innerHTML = `<button id="resumeBtn" type="button">CONTINUAR ▶</button>`;
+      $('resumeBtn').onclick = () => {
+        state='playing'; 
+        overlay.classList.add('hidden'); 
+        lastTime=performance.now(); 
+        getCurrentMusic().play();
+      };
       getCurrentMusic().pause();
-    }
-    else if(state==='paused') { 
-      state='playing'; overlay.classList.add('hidden'); lastTime=performance.now(); 
-      getCurrentMusic().play();
     }
   }
 
@@ -656,13 +703,12 @@
             say('¡IMPACTO! Te quedan ' + lives + ' vidas.');
           } else {
             state = 'gameover';
+            if (timerInterval) clearInterval(timerInterval);
             stopAllMusic();
             overlay.classList.remove('hidden');
             $('overlayTitle').textContent = '¡GAME OVER!';
             $('overlayText').textContent = `Te quedaste sin vidas. Puntuación final: ${score}. ¿Qué deseas hacer?`;
-            $('modalButtonsContainer').innerHTML = `<button id="retryBtn" class="btn-danger">VOLVER A INTENTAR</button><button id="menuBtn">MENÚ PRINCIPAL</button>`;
-            $('retryBtn').onclick = () => { overlay.classList.add('hidden'); startGame(); };
-            $('menuBtn').onclick = () => { location.reload(); };
+            $('modalButtonsContainer').innerHTML = `<button id="retryBtn" class="btn-danger" type="button">VOLVER A INTENTAR</button><button id="menuBtn" type="button">MENÚ PRINCIPAL</button>`;
           }
         }
       }
@@ -699,8 +745,17 @@
     draw(); requestAnimationFrame(loop);
   }
 
-  // Vincular eventos de botones principales de manera robusta
-  $('startBtn').addEventListener('click', () => { startGame(); });
+  // Delegación de clics ultra segura para cualquier botón de la interfaz o modales
+  document.addEventListener('click', (e) => {
+    if (e.target && (e.target.id === 'startBtn' || e.target.id === 'retryBtn')) {
+      overlay.classList.add('hidden');
+      startGame();
+    }
+    if (e.target && e.target.id === 'menuBtn') {
+      location.reload();
+    }
+  });
+
   $('pauseBtn').addEventListener('click', togglePause);
   $('restartBtn').addEventListener('click', startGame);
   window.addEventListener('keydown', handleKey);
