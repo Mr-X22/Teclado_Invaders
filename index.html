@@ -98,7 +98,7 @@
     <div class="overlay" id="overlay">
       <div class="modal">
         <h2 id="overlayTitle">¿LISTO PARA ESCRIBIR?</h2>
-        <p id="overlayText">Principiante: letras individuales alternadas. Normal: palabras cortas. Difícil: frases completas. ¡Selecciona la Velocidad Hacker y sobrevive a la lluvia de datos!</p>
+        <p id="overlayText">¡Tienes 3 vidas! Destruye a los invasores antes de que colisionen con tu base. Ajusta la velocidad y pon a prueba tu destreza.</p>
         <div class="modal-buttons">
           <button id="startBtn">INICIAR MISIÓN ▶</button>
         </div>
@@ -129,7 +129,7 @@
   </div>
   <div class="finger-guide"><strong>GUÍA DE DEDOS</strong><span class="finger-dots"><span></span><span></span><span></span><span></span><span></span></span><span>Meñique · Anular · Medio · Índice · Pulgar/espacio</span><span id="fingerTip">Coloca los dedos sobre ASDF y JKLÑ.</span></div>
   <div class="help">
-    <kbd>A–Z</kbd> y <kbd>Ñ</kbd> para disparar · Escribe la letra o palabra del invasor activo · Pulsa <kbd>Esc</kbd> para pausar.
+    <kbd>A–Z</kbd> y <kbd>Ñ</kbd> para disparar · Tienes 3 vidas · Pulsa <kbd>Esc</kbd> para pausar.
   </div>
 </div>
 
@@ -173,9 +173,7 @@
       const clone = sfxBlaster.cloneNode();
       clone.volume = 0.4;
       clone.play().catch(e => {});
-      setTimeout(() => {
-        clone.pause();
-      }, 700);
+      setTimeout(() => { clone.pause(); }, 700);
     } catch(e) {}
   }
 
@@ -189,7 +187,7 @@
   ];
   const phrases = [
     'HOLA GALAXIA','APRENDE A ESCRIBIR','LA NAVE AVANZA','TECLAS EN ACCION','PILOTO DEL ESPACIO','ESCRIBE CON CALMA','SALVA EL PLANETA','PRACTICA CADA DIA','LA TECNOLOGIA AYUDA','VAMOS A APRENDER','DOMINA EL TECLADO','MISION COMPLETADA',
-    'MANTEN LOS DEDOS EN SU LUGAR','MIRA LA PANTALLA AL ESCRIBIR','USA LOS DOS PULGARES','PULsa CADA TECLA CON SU DEDO','LA PRACTICA MEJORA LA PRECISION',
+    'MANTEN LOS DEDOS EN SU LUGAR','MIRA LA PANTALLA AL ESCRIBIR','USA LOS DOS PULGARES','PULSA CADA TECLA CON SU DEDO','LA PRACTICA MEJORA LA PRECISION',
     'ESCRIBE SIN MIRAR EL TECLADO','EL DEDO REGRESA A SU POSICION','PRIMERO PRECISION DESPUES RAPIDEZ','USA LAS DOS MANOS CON CALMA'
   ];
 
@@ -232,15 +230,14 @@
 
   let state='menu', score=0, lives=3, typed=0, mistakes=0, level=1, rowText='', progress=0;
   let aliens=[], bullets=[], particles=[], stars=[], lastTime=0, elapsed=0, spawnTimer=0, messageTimer=0;
-  let rowId=0, ship={x:480,y:486,shake:0, destroyed:false, explosionTimer:0};
+  let rowId=0, ship={x:480,y:486,shake:0};
   let lastSpawnZone = 1;
 
-  // Multiplicadores con velocidad Hacker extrema
   const getSpeedMultiplier = () => {
     const s = $('gameSpeed').value;
     if (s === 'slow') return 0.45;
     if (s === 'fast') return 2.2;
-    if (s === 'hacker') return 4.2; // Lluvia veloz a los pocos segundos
+    if (s === 'hacker') return 4.2;
     return 1.0;
   };
 
@@ -271,10 +268,11 @@
   }
 
   function startGame() {
-    score=0;lives=3;typed=0;mistakes=0;level=1;elapsed=0;bullets=[];particles=[];ship.shake=0;ship.destroyed=false;ship.explosionTimer=0;
+    score=0; lives=3; typed=0; mistakes=0; level=1; elapsed=0; bullets=[]; particles=[]; ship.shake=0;
     spawnTimer = 0; lastSpawnZone = 1;
+    updateStats();
     setupWave(); 
-    state='playing'; overlay.classList.add('hidden'); updateStats(); lastTime=performance.now();
+    state='playing'; overlay.classList.add('hidden'); lastTime=performance.now();
     $('pauseBtn').textContent='Ⅱ PAUSAR';
     playActiveMusic();
   }
@@ -313,7 +311,7 @@
 
   function handleKey(e) {
     if(e.key==='Escape') { e.preventDefault(); togglePause(); return; }
-    if(state!=='playing' || ship.destroyed) return;
+    if(state!=='playing') return;
     let key=e.key.toUpperCase();
     if(e.code==='Space') key=' ';
     if(key.length!==1 || !/[A-ZÑ ]/.test(key)) return;
@@ -386,26 +384,23 @@
     }
   }
 
-  function shipExplosion(x, y) {
-    playExplosion(); 
-    ship.destroyed = true;
-    ship.explosionTimer = 1.2;
-    stopAllMusic();
-
-    for(let i=0; i<45; i++) {
+  function triggerHitEffect() {
+    playExplosion();
+    ship.shake = 12; // Sacudida fuerte de la nave al perder una vida
+    for(let i=0; i<25; i++) {
       particles.push({
-        x: x + (Math.random()-0.5)*40,
-        y: y + (Math.random()-0.5)*20,
-        vx: (Math.random() - 0.5) * 300,
-        vy: (Math.random() - 0.5) * 300,
-        life: 1.0, maxLife: 1.0,
-        color: rand(['#ff4d4d', '#ffc400', '#ff8800', '#ffffff', '#00e5e5'])
+        x: ship.x + (Math.random()-0.5)*30,
+        y: ship.y + (Math.random()-0.5)*15,
+        vx: (Math.random() - 0.5) * 250,
+        vy: (Math.random() - 0.5) * 250,
+        life: 0.6, maxLife: 0.6,
+        color: rand(['#ff4d4d', '#ffc400', '#ffffff'])
       });
     }
   }
 
   function togglePause() {
-    if(state==='playing' && !ship.destroyed) { 
+    if(state==='playing') { 
       state='paused'; overlay.classList.remove('hidden'); 
       $('overlayTitle').textContent='MISIÓN EN PAUSA'; 
       $('overlayText').textContent='Tómate un respiro. Cuando estés listo, continúa.'; 
@@ -442,8 +437,7 @@
   }
 
   function drawShip() {
-    if (ship.destroyed && ship.explosionTimer > 0) return;
-    const x=ship.x+(ship.shake?Math.random()*4-2:0), y=ship.y;
+    const x=ship.x+(ship.shake?Math.random()*6-3:0), y=ship.y;
     ctx.fillStyle='#00b9f4';
     ctx.fillRect(x-4,y-45,8,20);ctx.fillRect(x-9,y-25,18,24);
     ctx.fillRect(x-20,y-13,40,13);ctx.fillRect(x-34,y-4,68,9);
@@ -492,40 +486,17 @@
   function update(dt) {
     elapsed+=dt; 
     if(messageTimer>0){messageTimer-=dt;if(messageTimer<=0)$('message').textContent='';}
-    
-    if (ship.destroyed) {
-      ship.explosionTimer -= dt;
-      particles.forEach(p=>{ p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; });
-      particles = particles.filter(p => p.life > 0);
-
-      if (ship.explosionTimer <= 0 && state === 'gameover') {
-        overlay.classList.remove('hidden');
-        $('overlayTitle').textContent = '¡NAVE DESTRUIDA!';
-        $('overlayText').textContent = `Un invasor impactó tu base. Puntuación final: ${score}. ¿Qué deseas hacer?`;
-        let btnContainer = document.querySelector('.modal-buttons');
-        btnContainer.innerHTML = `
-          <button id="retryBtn" class="btn-danger">VOLVER A INTENTAR</button>
-          <button id="menuBtn">MENÚ PRINCIPAL</button>
-        `;
-        $('retryBtn').onclick = () => { overlay.classList.add('hidden'); startGame(); };
-        $('menuBtn').onclick = () => { location.reload(); };
-      }
-      return;
-    }
 
     const diff = $('difficulty').value;
     const speedFactor = getSpeedMultiplier();
 
-    // Generador automático con alternancia de zonas (izquierda, centro, derecha) en nivel fácil
     if (diff === 'easy') {
       spawnTimer += dt;
       let interval = $('gameSpeed').value === 'hacker' ? 0.6 : (2.2 / speedFactor);
       if (spawnTimer >= interval) {
         spawnTimer = 0;
-        
         let nextZone = (lastSpawnZone + 1 + Math.floor(Math.random() * 2)) % 3;
         lastSpawnZone = nextZone;
-        
         let posX = 120;
         if (nextZone === 1) posX = 480;
         if (nextZone === 2) posX = 840;
@@ -580,15 +551,38 @@
 
     if(ship.shake>0)ship.shake--;
 
-    if(alive.some(a=>a.y > ship.y - 45)) {
-      state='gameover';
-      shipExplosion(ship.x, ship.y);
+    // Revisar si algún invasor tocó la base
+    let hitAlien = alive.find(a => a.y > ship.y - 45);
+    if (hitAlien) {
+      lives--;
+      updateStats();
+      triggerHitEffect();
+
+      if (lives > 0) {
+        // Si aún tiene vidas, limpiamos los invasores actuales y reiniciamos la oleada actual para continuar
+        setupWave();
+        say('¡Impacto recibido! Te quedan ' + lives + ' vidas.');
+      } else {
+        // Se acabaron las 3 vidas: Game Over definitivo
+        state = 'gameover';
+        stopAllMusic();
+        overlay.classList.remove('hidden');
+        $('overlayTitle').textContent = '¡GAME OVER!';
+        $('overlayText').textContent = `Te quedaste sin vidas. Puntuación final: ${score}. ¿Qué deseas hacer?`;
+        let btnContainer = document.querySelector('.modal-buttons');
+        btnContainer.innerHTML = `
+          <button id="retryBtn" class="btn-danger">VOLVER A INTENTAR</button>
+          <button id="menuBtn">MENÚ PRINCIPAL</button>
+        `;
+        $('retryBtn').onclick = () => { overlay.classList.add('hidden'); startGame(); };
+        $('menuBtn').onclick = () => { location.reload(); };
+      }
     }
   }
 
   function loop(now) {
     const dt=Math.min(.04,(now-lastTime)/1000||0);lastTime=now;
-    if(state==='playing'||ship.destroyed)update(dt);
+    if(state==='playing')update(dt);
     draw(); requestAnimationFrame(loop);
   }
 
