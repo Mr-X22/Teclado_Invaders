@@ -19,7 +19,16 @@
   .stat { background:#0b121b; border:1px solid #253448; padding:6px 10px; min-width:76px; text-align:center; border-radius:4px; }
   .stat small { display:block; color:var(--muted); font-size:9px; letter-spacing:1px; }
   .stat strong { display:block; color:var(--yellow); font-size:15px; margin-top:2px; }
-  
+
+  /* Sección de Postura y Manos Visible */
+  .posture-card { background:var(--panel); border:1px solid #253448; padding:14px; margin-bottom:10px; border-radius:6px; }
+  .posture-card h3 { color:var(--cyan); margin:0 0 8px; font-size:14px; letter-spacing:1px; }
+  .posture-content { display:flex; gap:15px; align-items:center; flex-wrap:wrap; }
+  .posture-img-container { flex:1; min-width:240px; text-align:center; }
+  .posture-img { max-width:100%; height:auto; border-radius:6px; border:1px solid #26394c; }
+  .posture-text { flex:1.5; min-width:240px; font-size:12px; line-height:1.5; color:#c1ccda; }
+  .posture-text b { color:var(--yellow); }
+
   .game-shell { border:1px solid #26394c; background:#000; box-shadow:0 0 0 4px #0b111a, 0 12px 45px #0009; position:relative; border-radius:6px; overflow:hidden; }
   canvas { display:block; width:100%; height:auto; aspect-ratio:16/9; image-rendering:pixelated; }
   .overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:#000b; padding:20px; text-align:center; z-index:10; }
@@ -28,7 +37,7 @@
   .modal h2 { color:var(--cyan); font-size:clamp(20px,4vw,32px); letter-spacing:2px; margin:0 0 12px; }
   .modal p { color:#c1ccda; line-height:1.6; font-size:14px; margin-bottom:20px; }
   .modal-buttons { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
-  button, select { background:#101d2a; color:#effaff; border:1px solid var(--cyan); padding:9px 13px; font:inherit; cursor:pointer; border-radius:4px; }
+  button, select { background:#101d2a; color:#effaff; border:1px solid var(--cyan); padding:9px 13px; font:inherit; cursor:pointer; border-radius:4px; z-index:20; position:relative; }
   button:hover { background:#123442; }
   .btn-danger { border-color: var(--red); color: var(--red); }
   .btn-danger:hover { background: #3a1111; }
@@ -78,13 +87,28 @@
     </div>
   </header>
 
+  <!-- GUÍA DE POSICIÓN DE MANOS RECUPERADA -->
+  <div class="posture-card">
+    <h3>🤲 POSTURA CORRECTA EN LAPTOP</h3>
+    <div class="posture-content">
+      <div class="posture-img-container">
+        <img src="https://blogger.googleusercontent.com/img/a/AVvXsEhBZmGhnnE8tKKh7emVbYH13OC-AdLgLkdEnwbOdX9xSjbjtAdafVePgYd-jL4EirHtiWtSc89TkBoBsIXk_iMoE_OyqsFZ08uAV1SVE1oY3L93kw69GIhwkhqycUnHmpMSb65w6mGW6VlwLkP9F2Zo3f5b8cNzI_nbJnp62xo8j87ihMiPCCOUj89-=w587-h358" alt="Posición de las manos en el teclado" class="posture-img">
+      </div>
+      <div class="posture-text">
+        <p><b>Fila Guía:</b> Coloca tus dedos índices sobre las letras <b>F</b> y <b>J</b> (reconócelas al tacto por sus pequeñas marcas).</p>
+        <p><b>Mano Izquierda:</b> Índice en <b>F</b>, medio en <b>D</b>, anular en <b>S</b> y meñique en <b>A</b>.</p>
+        <p><b>Mano Derecha:</b> Índice en <b>J</b>, medio en <b>K</b>, anular en <b>L</b> y meñique en <b>Ñ</b>.</p>
+      </div>
+    </div>
+  </div>
+
   <div class="game-shell">
     <canvas id="game" width="960" height="540" aria-label="Juego de mecanografía espacial"></canvas>
     <div class="overlay" id="overlay">
       <div class="modal">
         <h2 id="overlayTitle">¿LISTO PARA LA MISIÓN?</h2>
         <p id="overlayText">Tienes 3 minutos para sobrevivir y acumular puntos. ¡A los 3 minutos aparecerá el Jefe Final!</p>
-        <div class="modal-buttons">
+        <div class="modal-buttons" id="modalButtonsContainer">
           <button id="startBtn">INICIAR MISIÓN ▶</button>
         </div>
       </div>
@@ -195,12 +219,11 @@
   let rowId=0, ship={x:480,y:486,shake:0, invulnerable:0};
   let lastSpawnZone = 1;
 
-  // Variables del temporizador y del Boss
-  let gameTime = 180; // 3 minutos en segundos
+  let gameTime = 180;
   let timerInterval = null;
   let isBossActive = false;
   let bossHealth = 100;
-  let bossPointsAccumulated = 0; // Necesita 70 puntos para poder atacar
+  let bossPointsAccumulated = 0;
   let bossRecharging = false;
   let bossRechargeTimer = 0;
 
@@ -241,7 +264,7 @@
 
   function startBossFight() {
     isBossActive = true;
-    aliens = []; // Limpiar invasores normales
+    aliens = [];
     bossHealth = 100;
     bossPointsAccumulated = 0;
     rowText = bossPhrase;
@@ -320,20 +343,19 @@
     e.preventDefault();
 
     if (isBossActive) {
-      if (bossRecharging) return; // Si está recargando energía por un error, no responde temporalmente
+      if (bossRecharging) return;
 
       if (key === rowText[progress]) {
         typed++; 
-        bossPointsAccumulated += 10; // Cada letra correcta suma 10 puntos para alcanzar los 70 necesarios
+        bossPointsAccumulated += 10;
         score += 15;
         progress++;
         shoot({x: 480, y: 120, color: '#00e5e5'});
         updateStats();
 
         if (bossPointsAccumulated >= 70) {
-          // ¡Ataque exitoso al Boss! Se le descuenta vida
           bossHealth -= 25;
-          bossPointsAccumulated = 0; // Reinicia acumulación para el siguiente ataque
+          bossPointsAccumulated = 0;
           say('¡IMPACTO CRÍTICO AL BOSS! Vida del Boss: ' + Math.max(0, bossHealth) + '%');
           playExplosion();
 
@@ -343,8 +365,7 @@
             overlay.classList.remove('hidden');
             $('overlayTitle').textContent = '¡VICTORIA ÉPICA!';
             $('overlayText').textContent = `¡Has derrotado al Jefe Final! Puntuación final: ${score}. ¡Misión cumplida!`;
-            let btnContainer = document.querySelector('.modal-buttons');
-            btnContainer.innerHTML = `<button id="retryBtn">JUGAR DE NUEVO ▶</button><button id="menuBtn">SALIR</button>`;
+            $('modalButtonsContainer').innerHTML = `<button id="retryBtn">JUGAR DE NUEVO ▶</button><button id="menuBtn">SALIR</button>`;
             $('retryBtn').onclick = () => { overlay.classList.add('hidden'); startGame(); };
             $('menuBtn').onclick = () => { location.reload(); };
             return;
@@ -352,15 +373,14 @@
         }
 
         if (progress >= rowText.length) {
-          progress = 0; // Reinicia la frase del boss si la completa
+          progress = 0;
         }
         renderText();
       } else {
-        // ERROR CONTRA EL BOSS: Reinicia los 70 puntos y activa animación de recarga de energía
         mistakes++;
         bossPointsAccumulated = 0;
         bossRecharging = true;
-        bossRechargeTimer = 1.0; // 1 segundo de animación de recarga del jefe
+        bossRechargeTimer = 1.0;
         playExplosion();
         say('¡ERROR! El Boss absorbió tu energía y recarga escudo. ¡Vuelve a juntar 70 puntos!');
         updateStats();
@@ -454,8 +474,7 @@
       state='paused'; overlay.classList.remove('hidden'); 
       $('overlayTitle').textContent='MISIÓN EN PAUSA'; 
       $('overlayText').textContent='Tómate un respiro. Cuando estés listo, continúa.'; 
-      let btnContainer = document.querySelector('.modal-buttons');
-      btnContainer.innerHTML = `<button id="startBtn">CONTINUAR ▶</button>`;
+      $('modalButtonsContainer').innerHTML = `<button id="startBtn">CONTINUAR ▶</button>`;
       $('startBtn').onclick = togglePause;
       getCurrentMusic().pause();
     }
@@ -487,14 +506,12 @@
   }
 
   function drawBoss() {
-    // Dibujar el Jefe Final imponente en la parte superior
     ctx.fillStyle = bossRecharging ? '#ff4d4d' : '#8795ff';
     ctx.fillRect(380, 80, 200, 70);
     ctx.fillStyle = '#00e5e5';
     ctx.fillRect(400, 100, 40, 30);
     ctx.fillRect(520, 100, 40, 30);
 
-    // Animación visual de recarga de energía cuando el jugador se equivoca
     if (bossRecharging) {
       ctx.strokeStyle = '#ffc400';
       ctx.lineWidth = 4;
@@ -503,7 +520,6 @@
       ctx.stroke();
     }
 
-    // Barra de vida del Boss
     ctx.fillStyle = '#253448';
     ctx.fillRect(280, 40, 400, 16);
     ctx.fillStyle = '#ff4d4d';
@@ -579,9 +595,7 @@
     }
 
     if (isBossActive) {
-      // Ataques más rápidos del jefe en la fase final
       if (Math.random() < 0.03) {
-        // Disparos láser rápidos del boss hacia la nave
         bullets.push({
           x: 480 + (Math.random() - 0.5) * 150,
           y: 150,
@@ -646,8 +660,7 @@
             overlay.classList.remove('hidden');
             $('overlayTitle').textContent = '¡GAME OVER!';
             $('overlayText').textContent = `Te quedaste sin vidas. Puntuación final: ${score}. ¿Qué deseas hacer?`;
-            let btnContainer = document.querySelector('.modal-buttons');
-            btnContainer.innerHTML = `<button id="retryBtn" class="btn-danger">VOLVER A INTENTAR</button><button id="menuBtn">MENÚ PRINCIPAL</button>`;
+            $('modalButtonsContainer').innerHTML = `<button id="retryBtn" class="btn-danger">VOLVER A INTENTAR</button><button id="menuBtn">MENÚ PRINCIPAL</button>`;
             $('retryBtn').onclick = () => { overlay.classList.add('hidden'); startGame(); };
             $('menuBtn').onclick = () => { location.reload(); };
           }
@@ -686,7 +699,8 @@
     draw(); requestAnimationFrame(loop);
   }
 
-  $('startBtn').onclick = () => { startGame(); };
+  // Vincular eventos de botones principales de manera robusta
+  $('startBtn').addEventListener('click', () => { startGame(); });
   $('pauseBtn').addEventListener('click', togglePause);
   $('restartBtn').addEventListener('click', startGame);
   window.addEventListener('keydown', handleKey);
