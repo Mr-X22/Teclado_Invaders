@@ -15,7 +15,7 @@
   .brand-mark { color:var(--cyan); font-size:22px; text-shadow:0 0 14px #00e5e566; }
   h1 { margin:0; font-size:clamp(16px,2.5vw,22px); letter-spacing:2px; }
   .subtitle { color:var(--muted); font-size:10px; margin-top:2px; }
-  .stats { display:flex; gap:6px; flex-wrap:wrap; }
+  .stats { display:flex; gap:6px; flex-wrap:wrap; }\n  .stats-bar { width:100%; justify-content:center; margin:0 0 10px; background:var(--panel); border:1px solid #253448; padding:8px; border-radius:6px; }
   .stat { background:#0b121b; border:1px solid #253448; padding:6px 10px; min-width:76px; text-align:center; border-radius:4px; }
   .stat small { display:block; color:var(--muted); font-size:9px; letter-spacing:1px; }
   .stat strong { display:block; color:var(--yellow); font-size:15px; margin-top:2px; }
@@ -82,13 +82,7 @@
         <div class="subtitle">SIN PRISAS TECH</div>
       </div>
     </div>
-    <div class="stats">
-      <div class="stat"><small>PUNTOS</small><strong id="score">0000</strong></div>
-      <div class="stat"><small>TIEMPO</small><strong id="timer">03:00</strong></div>
-      <div class="stat"><small>NIVEL</small><strong id="level">01</strong></div>
-      <div class="stat"><small>VIDAS</small><strong id="lives">♥ ♥ ♥</strong></div>
-      <div class="stat"><small>PRECISIÓN</small><strong id="accuracy">100%</strong></div>
-    </div>
+
   </header>
 
   <div class="posture-card">
@@ -103,6 +97,14 @@
         <p><b>Mano Derecha:</b> Índice en <b>J</b>, medio en <b>K</b>, anular en <b>L</b> y meñique en <b>Ñ</b>.</p>
       </div>
     </div>
+  </div>
+
+  <div class="stats stats-bar">
+    <div class="stat"><small>PUNTOS</small><strong id="score">0000</strong></div>
+    <div class="stat"><small>TIEMPO</small><strong id="timer">03:00</strong></div>
+    <div class="stat"><small>NIVEL</small><strong id="level">01</strong></div>
+    <div class="stat"><small>VIDAS</small><strong id="lives">♥ ♥ ♥</strong></div>
+    <div class="stat"><small>PRECISIÓN</small><strong id="accuracy">100%</strong></div>
   </div>
 
   <div class="game-shell">
